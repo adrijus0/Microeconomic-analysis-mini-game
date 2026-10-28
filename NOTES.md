@@ -6,10 +6,10 @@ Anyone (human or agent) should be able to resume from this file alone. Update it
 
 ## Status
 
-- **Current phase:** Phase 1 (deck conversion) **complete and committed locally**.
-- **Next step:** 🛑 **waiting for explicit go-ahead for Phase 2** (game engine + first game). Do not start it.
+- **Current phase:** Phase 2 (engine + The Caravan Lockboxes) **complete and committed locally**.
+- **Next step:** 🛑 **waiting for explicit go-ahead for Phase 3** (Ellsberg, St. Petersburg, Framing). Do not start it.
 - **Do not:** touch `Microeconomic_analysis__Copy_/` (the LaTeX sources), push to any remote, or change repository settings. Ask before changing `CONFIG.siteUrl` or any repo setting.
-- **Open the result:** double-click `docs/index.html` → **▶ Presentation** (`docs/deck.html`), or double-click `docs/deck.html` directly. `S` = speaker view; `F` = fullscreen; arrows/space = next.
+- **Open the result:** double-click `docs/index.html` → **🎮 Games** (`docs/play.html`) → **The Caravan Lockboxes**, or open `docs/play.html#allais` directly. `?seed=42` repeats the draws and simulation; `?fast=1` skips the 20 s interlude. The deck’s web slide 11 (Try-it Allais) opens the same game in its overlay.
 
 ## Phase log
 
@@ -71,6 +71,63 @@ Phase 0 subagents: A (`ses_e7db81a10ffeTCGBkuPKPYRXLQ`), B (`ses_e7db81a0fffeLKH
 
 **Commit:** `git log -1` → Phase 1 commit (local only, nothing pushed).
 
+### Phase 2 — Engine + The Caravan Lockboxes (done, 2026-10-28)
+
+**Scope:** one reusable, data-driven stage engine and the first game (Allais /
+common consequence), skinned as a Fallout caravan. The deck and start screen
+were not rewritten. `docs/play.html` is now the real hub + game runner.
+
+**Built by the coordinator (shared files only):**
+
+| File | What it does |
+|---|---|
+| `docs/play.html` | hub, game mount, coming-soon panel and Report Card routes; no inline styles |
+| `docs/js/play.js` | hash router (`#allais`, `#stp`, `#ellsberg`, `#framing`, `#report`); hides the site bar inside the deck iframe |
+| `docs/js/engine.js` | scene → choice → lock → resolve → simulate → interlude → reveal; keyboard 1/2/3 + Enter, touch, reduced motion, missing-art fallback, scroll reset |
+| `docs/js/rng.js` | mulberry32, per-stream string seeds, `?seed=42` |
+| `docs/js/charts.js` | canvas histogram + running-average line, mean/SD/P(worst) stats, no chart library |
+| `docs/js/store.js` | localStorage progress inside try/catch, in-memory fallback |
+| `docs/js/assets.js` | key → path, labelled missing-art fallback, one `console.warn` per key |
+| `docs/js/hub.js` | four thematic cards, coming-soon panels, Paradox Report Card |
+| `docs/css/games.css` | mobile-first hub/game/report layout |
+| `docs/config.js` | `games.allais` + three coming-soon entries + nine asset keys + `gameOrder` |
+| `docs/js/figures.js` | aria wording for the triangle corrected to “segments AB and DC are parallel” (visual unchanged) |
+
+**Subagents (parallel; each owned only its files):**
+
+| ID | Session | Task | Result |
+|---|---|---|---|
+| G1 | `ses_e7d2ce0a0ffeuK3FgEvnHs4XKg` | `docs/js/games/allais.js`, `docs/css/games/allais.css`, `tools/test_allais_verdicts.mjs`, report | pure lottery-derived `verdict(choices, game)`; all four patterns; **105/105** checks after fixes; no pattern-matching; round-id-safe |
+| G2 | `ses_e7d2ce09fffeebyujgleyAw42Z` | `tools/make_sprites.py`, nine PNGs, report | seven 32×32 RGBA sprites, 640×360 card, 1280×720 background; deterministic byte-identical reruns; sizes match `config.js` |
+
+**What was merged:** the coordinator wrote the config entry and engine, merged
+G2’s asset entries, and used G1’s verdict module without editing it. G1’s
+config proposal in its report is not authoritative; `docs/config.js` is.
+
+**Review loop (fresh reviewers; did not build):**
+
+| ID | Session | Review | Verdict | Fixes |
+|---|---|---|---|---|
+| R1 | `ses_e7d0e81b4ffeWyYUr6iUup8cPx` | logic/math: 4 patterns, inequalities, mirror, benchmark, EVs/P(worst), slide refs, reveal timing, KaTeX, all four patterns at 375 + three at 1280 | **PASS WITH FIXES → PASS** | F1 (must) static `⊥` card showed on A+D/B+C: added `when:"inconsistent"` + engine filter; A+D/B+C now 3 cards/no `⊥`, A+C/B+D keep it. F2 (should) triangle caption/aria wrongly called AB/DC triangle edges: corrected to parallel segments. F4 latent: `verdict()` now reads `choices[round.id]` with r1/r2 fallback + renamed-round test. F5 mean label is now “Mean (1,000)”. F3/F6 accepted residual nits (benchmark label/step count); see §“Accepted residual nits”. |
+| R2 | `ses_e7d0e81b3ffeQUZ1rnR8e8VN1p` | layout/QA: 375/1280, deck overlay, touch/keyboard, file://, offline, localStorage blocked, missing sprite, reduced motion, h-scroll, tap targets, console/page errors, seed, hub/report screenshots | **PASS WITH FIXES → PASS** | F1 (must) option sprite squashed at ≤380: box 66×66 + `flex:none` (now 64×64); F2 (must) Enter on a focused link could start/lock: native activation restored for `a, button, summary`; F3 seed ellipsis: 96 px at ≤380; F4 `crisp-edges` overrode `pixelated`: order reversed; F5 `?fast=1` showed a 0 s interlude: now skips directly to Contract 2; F6 2 px formula inner scroll: KaTeX 0.85em; F8 fallback label wrapped mid-key: short key stem; F10 report grid/value wrap: 0.9fr/1.3fr + “Benchmark (A+C)”. F7 report taller than one 375 screen and F9 Phase 1 overlay Close wrap accepted as residual nits. Re-check PASS: 375/360/1280, 0 console/page/KaTeX errors, no page h-scroll. |
+
+**Final self-verification (coordinator):**
+
+- `node tools/test_allais_verdicts.mjs` → **105/105**, order **A+C No, A+D Yes, B+C Yes, B+D No**.
+- `python3 tools/check_assets.py` → **10 assets + 2 figures OK**, exit 0.
+- `?seed=42` reproduces the draw and the 1,000-run stats (B: mean 2,409, SD 258.4, P(worst) 1.1%; A: 2,400 / 0 / 0%). A’s P(worst) is **0%**, not its own minimum.
+- `?fast=1` skips the interlude; default interlude is 20 s, ticks down (20 → 18 after 2.2 s) and Continue is enabled throughout.
+- All four patterns at 375: 0 `.katex-error`, algebra fits (259/259 px), page `scrollWidth == 375`; A+D/B+C show no static `⊥`; A+C/B+D do.
+- 375×667, 1280×800 and the deck’s 375×605 iframe: no horizontal page scroll; hub 4 cards; report card screenshot-friendly. R2 also checked 360 px; the page stays 360/360.
+- R2 fixes verified after the report: option sprite 66×66 frame / 64×64 image at 375 and 360; computed `image-rendering: pixelated`; full random seed at 375; Enter on a focused link navigates instead of locking; `?fast=1` skips the interlude entirely; all four formula cards 275/275 at 375; fallback label `trader`; report grid 0.9fr/1.3fr.
+- Missing background/sprite: labelled fallback + one `console.warn`, no crash; restored files afterwards.
+- localStorage blocked: `GameStore.available === false`, game completes, hash route to `#report` uses the in-memory result.
+- Deck: **35 sections, 0 `.katex-error`, 0 console/page errors**, overlay 375×605 opens/closes, close returns focus to the Try-it button.
+- 0 `http(s)` requests with the network off; no fetch/XHR/ES modules.
+
+**Commit:** `Phase 2: engine + The Caravan Lockboxes` (local only, nothing
+pushed). See `git log -1` for the hash.
+
 ## Decisions made so far
 
 All in `PLAN.md` §0 (D1–D10). The ones likely to be revisited:
@@ -85,7 +142,12 @@ All in `PLAN.md` §0 (D1–D10). The ones likely to be revisited:
 8. Git initialised locally, one commit per phase, nothing pushed.
 9. **UI language English**, title string "Paradoxes of Choices under Uncertainty", supervisor "Assoc. Prof. Dmitrij Celov".
 10. **Frame 13 typo fixed** (`\chi` → `\mathcal{X}`), logged in `CONVERSION_NOTES.md`.
-11. **No external requests**: reveal.js/KaTeX/QR/pixel font vendored; `play.html` is a Phase 1 placeholder so the Try-it overlay never shows a 404.
+11. **No external requests**: reveal.js/KaTeX/QR/pixel font vendored; the Try-it iframe loads `play.html#<id>` and every route has a real panel (Phase 2 replaced the placeholder).
+12. **Allais display currency is caps at ×1/1000.** The slides say “2,400k gp”; the game shows `2,400 caps`. Same digits, deliberate display rescale; contradiction-invariant. Logged in `CONVERSION_NOTES.md` §8.
+13. **Interlude:** 20 s default, visible countdown, Continue enabled immediately (non-blocking), `?fast=1` skips it for demos; no invented choices.
+14. **B+D copy is truthful, not the task prompt’s “higher-EV every time”.** B 2,409 > A 2,400 but D 816 < C 825, so B+C is the EV-maximising pair; B+D is still a mirror violation. The UI says B is higher-EV in Round 1 and D lower-EV in Round 2; both choices impose opposite inequalities. The verdict table is unchanged.
+15. **Allais does not measure a certainty equivalent or CRRA.** The Report Card says “Not measured in this game” for both.
+16. **Original art only.** G2 generated every PNG; no downloaded or copyrighted game art. Sprites are 32×32 shown at 64/128 px (2×/4×), the cap icon at 32 px.
 
 ## Open questions for the team
 
@@ -97,7 +159,9 @@ Full list in `PLAN.md` §7. Still open after Phase 1:
 - **Speaker notes:** still empty by design. Do you want 2–4 bullets per slide authored as new content?
 - **References page count:** the source uses `allowframebreaks` and was never compiled. We split 6 + 6; if the PDF paginates to 3 pages, the web count becomes 36. The footer follows the DOM automatically.
 - **Residual accessibility nits:** focus ring on white is 2.08:1 (accepted), and the Try-it dialog does not trap Tab (`inert` not set). Fix now or in Phase 4 QA?
-- **`play.html` placeholder:** currently a “Phase 2 builds the engine” page. Confirm that is fine until the first game lands.
+- **Phase 3 games:** only Allais is playable; `#ellsberg`, `#stp`, `#framing` are clean “Coming in Phase 3” panels. Confirm the order (Ellsberg, St. Petersburg, Framing) when you give the go-ahead.
+- **Accepted Phase 2 residual nits:** the Report Card’s benchmark row is always labelled “Benchmark (A+C)” (correct but not the player’s pattern); the step bar discloses that there are two contracts (not the A/B–C/D pairing); the B+D “higher/lower EV” wording is tied to the shipped numbers, so any number change needs a copy review; in-memory progress is lost on a full reload when localStorage is blocked (hash navigation keeps it); the Report Card is a clean single card but ~1,000 px tall at 375 (not one screen); the Phase 1 deck overlay Close label wraps at 375; the first formula card has a 2 px internal scroll at 360 px (page itself never scrolls horizontally; 375 is clean).
+- **`siteUrl`** is still the Phase 1 placeholder; do not change it or the QR without approval.
 
 ## Facts that are easy to get wrong (keep)
 
@@ -112,6 +176,12 @@ Full list in `PLAN.md` §7. Still open after Phase 1:
 - **Frame 27** keeps `\sum_{k=1}^{n}1`; it is correct, not a typo.
 - **Frame 15/16 empty block titles** were dropped; `block--untitled` has body only.
 - **Frame 26** is `[plain]`: no `<h2>`, no footer, centred. The **title slide** has a `1 / 35` footer; only frame 26 is bare.
-- **`play.html` is a placeholder**, not the Phase 2 hub. The Try-it overlay is a true viewport dialog moved to `<body>`; the iframe is lazy.
+- **`play.html` is now the real hub + runner**, not a placeholder. Routes: bare = hub, `#allais`, `#stp`, `#ellsberg`, `#framing`, `#report`. The Try-it overlay is a true viewport dialog moved to `<body>`; the iframe is lazy and loads `play.html#allais` at 375×605 in testing.
+- **Phase 2 verdict facts:** Allais A+C **No**, A+D **Yes**, B+C **Yes**, B+D **No**; A+C and B+D are mirror violations. EVs A 2,400 / B 2,409 / C 825 / D 816; P(0) 0 / .01 / .67 / .66. B+C — not B+D — is the higher-EV-every-time pair.
+- **Display caps are ×1/1000 of the slides’ “2,400k gp”**, not a new payoff. The report card’s CE/CRRA fields say “Not measured in this game”.
+- **The static `⊥` card is conditional** (`when:"inconsistent"`), so A+D/B+C do not show it above their “EU representation exists” verdict; the dynamic panel always shows the player’s actual inequalities.
+- **Art:** nine original PNGs (`hub_allais`, `allais_bg`, seven sprites); `check_assets.py` passes 10 assets + 2 figures. Missing art falls back to a labelled box/banner + one `console.warn`.
+- **Tests:** `node tools/test_allais_verdicts.mjs` = **105/105**; `python3 tools/check_assets.py` = exit 0.
+- **Deck unaffected in content:** 35 sections, 0 `.katex-error`, 0 console/page errors after Phase 2; the only deck-shared code change is the triangle aria wording in `figures.js` (visual unchanged).
 - **QR** encodes the placeholder `CONFIG.siteUrl`; margin 32 gives a 4-module quiet zone. It decodes in testing.
 - **`docs/vendor/`** is pinned: reveal.js 4.6.1, KaTeX 0.16.11, qrcode-generator 1.4.4, Press Start 2P. No CDN, no `fetch()`, no ES modules.

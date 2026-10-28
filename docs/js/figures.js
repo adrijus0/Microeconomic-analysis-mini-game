@@ -49,9 +49,9 @@
     var clipId = "tri-clip-" + uid;
     var titleId = "tri-title-" + uid;
     var aria =
-      "Probability triangle with lotteries A, B, C and D: A and B are joined " +
-      "on the left edge, C and D on the right, and seven parallel dashed " +
-      "indifference lines cross the triangle";
+      "Probability triangle with lotteries A, B, C and D: the segments AB and " +
+      "DC are parallel, A and B sit on the left, C and D on the right, and " +
+      "seven parallel dashed indifference lines cross the triangle";
 
     var out = [];
     out.push(

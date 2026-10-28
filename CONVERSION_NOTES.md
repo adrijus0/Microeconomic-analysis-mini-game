@@ -181,9 +181,9 @@ to `<body>`), the iframe is lazy (`play.html#<id>`), the Close button is
   qrcode-generator 1.4.4 and Press Start 2P are vendored in `docs/vendor/`.
   The deck loads 27 `file://` requests; 0 `http(s)` requests, even with all
   network blocked.
-- **No `play.html` games yet.** A small placeholder page exists so the Try-it
-  iframe opens and closes cleanly; Phase 2 replaces it with the hub and the
-  first game. It is not Phase 2 logic.
+- **No `play.html` games in Phase 1.** A small placeholder page existed so the
+  Try-it iframe opened and closed cleanly; Phase 2 replaced it with the hub,
+  the engine and the first game (see §8). The Phase 1 deck itself is unchanged.
 - **No GitHub Pages settings / no push.** `siteUrl` is a placeholder; ask before
   changing it or pushing (BRIEF §11).
 - **No analytics, accounts or storage.** None added.
@@ -217,3 +217,105 @@ open docs/index.html               # double-click equivalent: start screen
 
 `docs/deck.html` must also work when double-clicked directly (`file://`), and
 under a GitHub Pages sub-path (all paths relative, `docs/.nojekyll` present).
+
+---
+
+## 8. Phase 2 — game engine + The Caravan Lockboxes
+
+**Phase 2, 2026-10-28.** `docs/play.html` is now the real hub + game runner.
+`docs/deck.html`, `docs/index.html`, `docs/css/theme.css`, `docs/css/deck.css`
+and `docs/js/tryit.js` were not changed. The LaTeX sources were not touched.
+
+### 8.1 Structure
+
+| File | Role |
+|---|---|
+| `docs/play.html` | hub, game mount, coming-soon panel and Report Card routes |
+| `docs/js/play.js` | hash router (`#allais`, `#stp`, `#ellsberg`, `#framing`, `#report`); hides the site bar inside the deck iframe |
+| `docs/js/engine.js` | reusable stage machine: scene → choice → lock → resolve → simulate → interlude → reveal |
+| `docs/js/rng.js` | mulberry32 seeded PRNG and `?seed=` parsing |
+| `docs/js/charts.js` | canvas histogram and running-average chart, no chart library |
+| `docs/js/store.js` | localStorage progress with an in-memory fallback, all reads/writes in try/catch |
+| `docs/js/assets.js` | key → path resolution, labelled missing-art fallback, single `console.warn` per key |
+| `docs/js/hub.js` | four thematic hub cards, coming-soon panels and the Paradox Report Card |
+| `docs/js/games/allais.js` | pure `verdict(choices, game)` derived from the lotteries |
+| `docs/css/games.css` | mobile-first hub/game/report layout |
+| `docs/css/games/allais.css` | scoped colour tokens only; no layout or panel rules |
+
+The extra helper files (`store.js`, `assets.js`, `play.js`) are coordinator-owned
+and keep the engine, hub and router from duplicating the same fallbacks.
+
+### 8.2 Content deviations, all deliberate
+
+1. **Display currency is caps at ×1/1000.** The slides say “2,400k gp”
+   (thousands). The game shows `1.00 → 2,400 caps`, etc. — the same digits at a
+   deliberate ×1/1000 display rescale. The contradiction is invariant to a
+   positive rescaling; no probability or payoff was invented. Logged in
+   `NOTES.md` and shown in the reveal footnote.
+2. **The 20-second “weigh the cargo” interlude.** New UI copy, no new numbers
+   and no choices. The countdown is visible, Continue is available immediately
+   (non-blocking), and `?fast=1` skips it for demos. It is placed between
+   Round 1 and Round 2 by `interlude.afterRound: "r1"`.
+3. **The paradox name appears only in the reveal.** Scene, hub card, choice
+   prompts and the interlude never say “Allais”; the Report Card stays empty
+   until a game is completed. The paired structure is not described until the
+   reveal.
+4. **B+D copy is mathematically truthful, not the task prompt’s wording.** The
+   Phase 2 task prompt said B+D “took the higher-EV option every time”, but the
+   slide numbers give B 2,409 > A 2,400 and C 825 > D 816: B+C is the
+   higher-EV pair, and B+D is still a mirror violation. The shipped copy says
+   B is higher-EV in Round 1 and D is lower-EV in Round 2, and explains that
+   the pattern is the mirror of the textbook A+C answer. The verdict table
+   (A+C No, A+D Yes, B+C Yes, B+D No) is unchanged.
+5. **Allais does not measure a certainty equivalent or CRRA coefficient.** The
+   Report Card shows “Not measured in this game” for both fields rather than
+   inventing a number.
+6. **Mobile line breaks in the reveal formulas.** The three-line `aligned`
+   form of the `A≻B` derivation and the `V(A)…V(D)` line use the same symbols
+   and values as the slides, split only so a 375 px screen does not clip them.
+   The slide source itself already breaks the derivation over two lines.
+7. **Formula cards are the textbook derivation.** They are labelled “Textbook
+   pattern: A over B” / “Textbook pattern: C over D”; the player’s own pattern
+   is in the separate “You vs. expected utility” panel, so an A+D or B+C
+   player is not told that the textbook inequalities were their choices.
+8. **The `⊥` formula is conditional.** The static Slide 11 contradiction card
+   carries `when: "inconsistent"` and the engine filters it by the computed
+   verdict. A+D/B+C therefore show only the derivation, C≻D and the
+   prospect-theory values; A+C/B+D still show the contradiction. The dynamic
+   panel is always the authority.
+9. **Figure aria/caption wording corrected.** The caption and the triangle’s
+   screen-reader text now say “the segments AB and DC are parallel” (A and B
+   on the left, C and D on the right) instead of calling them triangle edges.
+   The SVG geometry is unchanged; this only fixes the description. It affects
+   the deck’s frame 12 aria text too, not its visual.
+10. **Verdict logic reads round ids, not literal `r1`/`r2`.** The engine keys
+    choices by `round.id`; `AllaisGame` now resolves the round objects first
+    and normalises its returned choices to `{r1, r2}` for the panel. A
+    renamed-round test covers it. The simulation mean label is “Mean (1,000)”
+    so a sample mean such as C 765 is not read as the exact EV 825.
+11. **Post-review fixes (layout/QA).** Option-sprite frames are 66×66 with a
+    non-shrinking 64×64 image; `image-rendering` resolves to `pixelated`; the
+    375 px seed chip shows the full value; Enter on a focused `a`, `button` or
+    `summary` now uses native activation (a focused “← Hub” link can no longer
+    start or lock a choice); `?fast=1` skips the interlude screen entirely;
+    formula text is 0.85em at ≤600 px; missing-sprite labels show a short key
+    stem; the Report Card grid is 0.9fr/1.3fr with the label “Benchmark
+    (A+C)”. None of these changes game content.
+
+### 8.3 Art and presentation
+
+- Nine original PNGs generated by `tools/make_sprites.py`: seven 32×32
+  sprites, one 640×360 hub card, one 1280×720 background. No downloaded or
+  copyrighted game art, no text baked into an image.
+- Sprites display at 64 px (2×) on phones and 128 px (4×) on wider screens
+  with `image-rendering: pixelated`; the bottle-cap icon is 32 px (1×).
+- Missing art produces a labelled coloured box (or a labelled gradient for a
+  background) and one `console.warn`; the engine continues.
+- `python3 tools/check_assets.py` passes with all 10 assets and 2 figures.
+
+### 8.4 Routes
+
+`play.html` (bare) = hub; `play.html#allais` = the game;
+`play.html#stp`, `#ellsberg`, `#framing` = clean “Coming in Phase 3” panels;
+`play.html#report` = Paradox Report Card. The deck’s four Try-it iframes still
+load `play.html#<id>` and the overlay’s ✕ still closes them.

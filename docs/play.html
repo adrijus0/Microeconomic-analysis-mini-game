@@ -5,102 +5,44 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark">
   <title>Games — Paradoxes of Choices under Uncertainty</title>
-  <meta name="description" content="Games hub placeholder. The mini-games are built in Phase 2.">
+  <meta name="description" content="Interactive mini-games about paradoxes of choice under uncertainty.">
+  <link rel="stylesheet" href="vendor/katex/dist/katex.min.css">
   <link rel="stylesheet" href="css/theme.css">
-  <style>
-    /* Scaffold-only styles; the real games hub gets css/games.css in Phase 2. */
-    .placeholder {
-      min-height: 100vh;
-      min-height: 100svh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 28px 20px;
-      background: radial-gradient(circle at 50% 0%, #12466f 0%, #0b2a45 48%, #071726 100%);
-      color: #fff;
-      text-align: center;
-    }
-    .placeholder__box {
-      width: min(620px, 100%);
-      padding: 30px 26px 34px;
-      background: #fff;
-      color: var(--ink);
-      border: 4px solid #06192d;
-      box-shadow: 9px 9px 0 rgba(0, 0, 0, 0.3);
-    }
-    .placeholder__kicker {
-      margin: 0 0 14px;
-      font-family: var(--font-pixel);
-      font-size: 11px;
-      line-height: 1.6;
-      color: var(--vu-blue);
-      text-transform: uppercase;
-    }
-    .placeholder h1 {
-      margin: 0 0 12px;
-      color: var(--vu-blue-deep);
-      font-size: clamp(24px, 4vw, 34px);
-      line-height: 1.2;
-    }
-    .placeholder p {
-      margin: 0 0 18px;
-      font-size: clamp(16px, 2.2vw, 19px);
-      line-height: 1.45;
-      color: var(--ink-soft);
-    }
-    .placeholder__route {
-      display: inline-block;
-      margin: 0 0 20px;
-      padding: 6px 10px;
-      background: var(--wash);
-      border: 1px solid var(--rule);
-      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-      font-size: 14px;
-      color: var(--vu-blue-deep);
-      overflow-wrap: anywhere;
-    }
-    .placeholder__actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      justify-content: center;
-    }
-  </style>
+  <link rel="stylesheet" href="css/games.css">
+  <link rel="stylesheet" href="css/games/allais.css">
 </head>
-<body>
-  <main class="placeholder">
-    <div class="placeholder__box">
-      <p class="placeholder__kicker">Scaffold · Phase 2 builds the engine</p>
-      <h1 id="game-title">The games hub</h1>
-      <p id="game-copy">
-        The mini-games are not built yet. This page is here so the deck's
-        “Try it” overlay opens and closes cleanly in Phase 1. Phase 2 replaces
-        this placeholder with the real hub and the first game.
-      </p>
-      <div class="placeholder__route" id="game-route">play.html</div>
-      <div class="placeholder__actions">
-        <a class="pixel-btn pixel-btn--small" href="index.html">← Back to start</a>
-        <a class="pixel-btn pixel-btn--small pixel-btn--light" href="deck.html">Presentation</a>
+<body class="games-page">
+  <a class="skip-link" href="#main">Skip to the games</a>
+
+  <header class="games-bar">
+    <a class="games-bar__link" href="index.html">← Start</a>
+    <span class="games-bar__brand">Paradoxes of Choices</span>
+    <a class="games-bar__link" href="deck.html">Presentation</a>
+  </header>
+
+  <main id="main" class="games-main">
+    <section id="view-hub" class="view" hidden></section>
+    <section id="view-game" class="view view--game" hidden></section>
+    <section id="view-coming" class="view" hidden></section>
+    <section id="view-report" class="view" hidden></section>
+    <noscript>
+      <div class="coming__box">
+        <p>The games need JavaScript. The presentation deck works without it.</p>
+        <p><a href="deck.html">Open the presentation</a></p>
       </div>
-    </div>
+    </noscript>
   </main>
 
+  <script src="vendor/katex/dist/katex.min.js"></script>
   <script src="config.js"></script>
-  <script>
-    (function () {
-      "use strict";
-      var titles = {
-        stp: "The Doubling Contract",
-        allais: "The Caravan Lockboxes",
-        ellsberg: "The Fixer's Crate",
-        framing: "The Jarl's Orders"
-      };
-      var id = (location.hash || "").replace(/^#\/?/, "");
-      var route = document.getElementById("game-route");
-      var heading = document.getElementById("game-title");
-      if (route) route.textContent = "play.html" + (id ? "#" + id : "");
-      if (heading) heading.textContent = titles[id] || "The games hub";
-    })();
-  </script>
+  <script src="js/store.js"></script>
+  <script src="js/assets.js"></script>
+  <script src="js/rng.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/figures.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="js/games/allais.js"></script>
+  <script src="js/hub.js"></script>
+  <script src="js/play.js"></script>
 </body>
 </html>
