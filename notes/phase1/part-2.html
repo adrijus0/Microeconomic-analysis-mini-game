@@ -1,0 +1,186 @@
+<section data-frame="9" data-section="St. Petersburg paradox" class="tight">
+  <h2>Bernoulli’s resolution: concave utility</h2>
+  <div class="slide-body">
+    <p>With wealth $w$ and $u(x)=\ln x$, the maximum price $p$ solves</p>
+    $$
+    \sum_{k=1}^{\infty}2^{-k}\ln\!\big(w+2^{k}-p\big)=\ln w .
+    $$
+    <div class="cols cols--48-50">
+      <div class="col col--center">
+        <table class="tbl tbl--right">
+          <thead>
+            <tr><th>Wealth $w$</th><th>Price $p$</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>10</td><td>4.97</td></tr>
+            <tr><td>100</td><td>7.79</td></tr>
+            <tr><td>1 000</td><td>10.95</td></tr>
+            <tr><td>1 000 000</td><td>20.87</td></tr>
+          </tbody>
+        </table>
+        <p class="note-small">(numerical solution, see Appendix)</p>
+      </div>
+      <div class="col">
+        <ul>
+          <li>Each extra emerald is worth less: $u''&lt;0$.</li>
+          <li>If the villager owns only $2^{20}\approx10^6$ emeralds, the expected value is just $21$.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="block">
+      <div class="block__title">Takeaway</div>
+      <div class="block__body">This paradox <em>created</em> EU. But prizes $e^{2^k}$ break log utility again $\Rightarrow$ $u$ must be bounded.</div>
+    </div>
+  </div>
+</section>
+
+<!-- tryit:allais -->
+<section data-frame="10" data-section="Allais paradox" class="tight">
+  <h2>Allais paradox: a rare drop in OSRS (vote!)</h2>
+  <div class="slide-body">
+    <div class="block block--game">
+      <div class="block__title">Old School RuneScape: you got a rare drop. How do you cash it in?</div>
+      <div class="block__body">
+        <p><strong>Question 1.</strong> Which do you take?</p>
+        <ul>
+          <li>$A$: sell on the Grand Exchange: <strong>2 400k gp for sure</strong>.</li>
+          <li>$B$: walk it through the Wilderness to a buyer: 2 500k gp w.p. 0.33, 2 400k w.p. 0.66, a player killer takes it w.p. 0.01.</li>
+        </ul>
+        <div class="fragment fragment--collapse">
+          <p><strong>Question 2.</strong> Two deep-Wilderness trips. Which do you take?</p>
+          <ul>
+            <li>$C$: 2 500k gp w.p. 0.33, nothing w.p. 0.67.</li>
+            <li>$D$: 2 400k gp w.p. 0.34, nothing w.p. 0.66.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="block fragment fragment--collapse">
+      <div class="block__title">Typical answers (Kahneman &amp; Tversky, 1979)</div>
+      <div class="block__body">82% choose $A$ and 83% choose $C$.</div>
+    </div>
+  </div>
+</section>
+
+<section data-frame="11" data-section="Allais paradox" class="tight">
+  <h2><span>Why $A\succ B$ and $C\succ D$ is inconsistent</span></h2>
+  <div class="slide-body">
+    <p>Amounts in thousands of gp; normalize $u(0)=0$. Expected utility gives:</p>
+    $$
+    \begin{align*}
+    A\succ B &amp;\iff u(2400) &gt; 0.33\,u(2500)+0.66\,u(2400)\\
+             &amp;\iff 0.34\,u(2400) &gt; 0.33\,u(2500),\\[4pt]
+    C\succ D &amp;\iff 0.33\,u(2500) &gt; 0.34\,u(2400).
+    \end{align*}
+    $$
+    $$
+    0.34\,u(2400)&gt;0.33\,u(2500)&gt;0.34\,u(2400)\qquad \bot
+    $$
+    <div class="block">
+      <div class="block__title">Common consequence</div>
+      <div class="block__body">$C,D$ are $A,B$ with the common part “2 400 w.p. 0.66” replaced by “nothing w.p. 0.66”. Independence says this cannot matter; people react because $A$ is <strong>certain</strong>.</div>
+    </div>
+  </div>
+</section>
+
+<section data-frame="12" data-section="Allais paradox" class="tight">
+  <h2>The probability triangle (Marschak–Machina)</h2>
+  <div class="slide-body">
+    <div class="cols cols--52-46">
+      <div class="col">
+        <div class="figure figure--triangle" data-figure="triangle" role="img" aria-label="Probability triangle with lotteries A, B, C and D"></div>
+      </div>
+      <div class="col">
+        <ul>
+          <li>Points = lotteries over $\{0,2400,2500\}$.</li>
+          <li>EU indifference curves: <strong>parallel lines</strong> (dashed).</li>
+          <li>$AB \parallel DC$, so EU ranks both pairs alike: $A\succ B \Leftrightarrow D\succ C$.</li>
+          <li>$A$ and $C$ together need curves that <strong class="nowrap">fan out</strong>.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section data-frame="13" data-section="Allais paradox" class="script">
+  <h2>Paradoxical pattern of choice</h2>
+  <div class="slide-body">
+    <p>Consider four lotteries $L_1,L_2,L_3,L_4 \in \mathcal{L}$ over outcomes $x_1,x_2,x_3 \in \mathcal{X}$.</p>
+    <p>Each lottery is represented by a probability distribution:</p>
+    $$
+    L_j=\{(x_i,p_{ij})\}_{i=1}^3,
+    \qquad
+    \sum_{i=1}^3p_{ij}=1.
+    $$
+    <p>Under expected utility, these preferences require</p>
+    $$
+    \sum_{i=1}^3p_{i1}u(x_i)&gt;
+    \sum_{i=1}^3p_{i2}u(x_i),
+    $$
+    $$
+    \sum_{i=1}^3p_{i4}u(x_i)&gt;
+    \sum_{i=1}^3p_{i3}u(x_i).
+    $$
+    <div class="block">
+      <div class="block__title">Question</div>
+      <div class="block__body">Can a single utility function satisfy both inequalities while respecting independence?</div>
+    </div>
+  </div>
+</section>
+
+<section data-frame="14" data-section="Allais paradox" class="tight">
+  <h2>Independence and inconsistent preferences</h2>
+  <div class="slide-body">
+    <p>Without loss of generality, suppose the observed preferences satisfy</p>
+    $$
+    L_1\succ L_2,\qquad L_4\succ L_3.
+    $$
+    <p>For some $\alpha\in(0,1)$, let</p>
+    $$
+    L_3=\alpha L_1+(1-\alpha)N,\qquad
+    L_4=\alpha L_2+(1-\alpha)N.
+    $$
+    <p>By the independence axiom, $L_1\succ L_2$ implies $L_3\succ L_4$. This contradicts the observed preference $L_4\succ L_3$.</p>
+    <div class="block block--alert">
+      <div class="block__title">Conclusion</div>
+      <div class="block__body">The observed reversal violates independence: adding the same lottery component in the same proportions cannot reverse the preference ranking.</div>
+    </div>
+  </div>
+</section>
+
+<section data-frame="15" data-section="Allais paradox" class="tight">
+  <h2>Generalized Allais paradox</h2>
+  <div class="slide-body">
+    <p>Let $x_H&gt;x_M&gt;x_0$, $p,q\in(0,1)$, and define</p>
+    $$
+    \begin{aligned}
+    \mathcal{P}_A&amp;=\delta_{x_M},&amp;
+    \mathcal{P}_B&amp;=p\delta_{x_H}+(1-p)\delta_{x_0},\\
+    \mathcal{P}_C&amp;=q\delta_{x_M}+(1-q)\delta_{x_0},&amp;
+    \mathcal{P}_D&amp;=pq\delta_{x_H}+(1-pq)\delta_{x_0}.
+    \end{aligned}
+    $$
+    <p>Suppose</p>
+    $$
+    \mathcal{P}_A\succ\mathcal{P}_B,
+    \qquad
+    \mathcal{P}_D\succ\mathcal{P}_C.
+    $$
+    <p>Expected utility, with $u(x_0)=0$, implies</p>
+    $$
+    \begin{aligned}
+    u(x_M)&amp;&gt;p\,u(x_H),\\
+    pq\,u(x_H)&amp;&gt;q\,u(x_M)
+    \;\Longrightarrow\;
+    p\,u(x_H)&gt;u(x_M).
+    \end{aligned}
+    $$
+    $$
+    \boxed{u(x_M)&gt;p\,u(x_H)&gt;u(x_M)}
+    \qquad\bot
+    $$
+    <div class="block block--alert block--untitled">
+      <div class="block__body">$\text{Violation of independence} \;\Longrightarrow\; \text{no expected-utility representation.}$</div>
+    </div>
+  </div>
+</section>

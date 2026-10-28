@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Paradoxes of Choices under Uncertainty — Presentation</title>
+  <meta name="description" content="Microeconomic analysis: paradoxes of choice under uncertainty.">
+
+  <!-- All styles are local. No CDN, no runtime request. -->
+  <link rel="stylesheet" href="vendor/reveal/reset.css">
+  <link rel="stylesheet" href="vendor/reveal/reveal.css">
+  <link rel="stylesheet" href="vendor/katex/dist/katex.min.css">
+  <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="css/deck.css">
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+
+
+      <!-- PART 1 — frames 1–8 (S1) -->
+      <section class="title-slide" data-frame="1" data-section="">
+        <div class="title-slide__inner">
+          <h1>Paradoxes of Choices under Uncertainty</h1>
+          <p class="title-slide__subtitle">Microeconomic analysis</p>
+          <p class="title-slide__authors">Gedas Beržinskas, Adrijus Skuodas, Jokūbas Žitkevičius</p>
+          <p class="title-slide__supervisor">Supervisor: Assoc. Prof. Dmitrij Celov</p>
+          <img class="title-slide__logo" src="assets/ui/mif.png" alt="Vilnius University Faculty of Mathematics and Informatics">
+        </div>
+      </section>
+
+      <section data-frame="2" data-section="">
+        <h2>Outline</h2>
+        <div class="slide-body">
+          <ol class="toc">
+            <li><span class="toc__num">1</span><span class="toc__label">Expected utility: the benchmark</span></li>
+            <li><span class="toc__num">2</span><span class="toc__label">St. Petersburg paradox</span></li>
+            <li><span class="toc__num">3</span><span class="toc__label">Allais paradox</span></li>
+            <li><span class="toc__num">4</span><span class="toc__label">Ellsberg paradox</span></li>
+            <li><span class="toc__num">5</span><span class="toc__label">Framing and loss aversion</span></li>
+            <li><span class="toc__num">6</span><span class="toc__label">Explaining the paradoxes</span></li>
+            <li><span class="toc__num">7</span><span class="toc__label">Conclusion</span></li>
+            <li><span class="toc__num">8</span><span class="toc__label">Appendix</span></li>
+          </ol>
+        </div>
+      </section>
+
+      <section data-frame="3" data-section="Expected utility: the benchmark">
+        <h2>Choices under uncertainty</h2>
+        <div class="slide-body">
+          <p>A <strong>lottery</strong> specifies possible outcomes and their probabilities:</p>
+          <div class="math">$$L=\{(x_1,p_1),\ldots,(x_n,p_n)\}, \quad p_i\geq 0,\quad \sum_{i=1}^n p_i=1,\quad x_i\in\mathcal{X}.$$</div>
+          <ul>
+            <li>Outcomes may be monetary prizes; probabilities describe their chances.</li>
+            <li>A decision-maker has preferences over lotteries, written $L\succeq M$ if $L$ is weakly preferred to $M$.</li>
+            <li>The question: can these preferences be represented by a consistent rule?</li>
+          </ul>
+          <div class="block">
+            <div class="block__title">Expected value is not enough</div>
+            <div class="block__body">Two lotteries can have the same expected monetary payoff but be ranked differently because the decision-maker responds to risk.</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="tight" data-frame="4" data-section="Expected utility: the benchmark">
+        <h2>Example: a lottery in Minecraft</h2>
+        <div class="slide-body">
+          <div class="block block--game">
+            <div class="block__title">Mining a diamond ore with a <em>Fortune III</em> pickaxe</div>
+            <div class="block__body">
+              <p>The game draws the number of diamonds you get:</p>
+              <div class="math">$$L_{\text{mine}}=\Big\{(1,\tfrac25),\ (2,\tfrac15),\ (3,\tfrac15),\ (4,\tfrac15)\Big\}, \qquad \mathbb{E}[L_{\text{mine}}]=\tfrac{2+2+3+4}{5}=2.2 .$$</div>
+              <p>A villager offers instead: <strong>2 diamonds for sure</strong> for the unmined ore.</p>
+            </div>
+          </div>
+          <ul>
+            <li>Risk-neutral player: $2.2&gt;2$ $\Rightarrow$ mine it.</li>
+            <li>A careful hardcore player who needs exactly 2 diamonds may take the sure 2.</li>
+            <li>Both are reasonable: we need a rule that ranks <em>lotteries</em>, not just their averages.</li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="script" data-frame="5" data-section="Expected utility: the benchmark">
+        <h2>Expected utility</h2>
+        <div class="slide-body">
+          <p>Assign each outcome $x$ a utility $u(x)$, where $u:\mathcal{X}\rightarrow\mathbb{R}$.
+          The expected utility of a lottery is</p>
+          <div class="math">$$EU(L)=\sum_{i=1}^n p_i u(x_i).$$</div>
+          <p>The model predicts that</p>
+          <div class="math">$$L\succeq M \quad\Longleftrightarrow\quad EU(L)\geq EU(M).$$</div>
+          <p>This representation is justified by the
+          <strong>von Neumann–Morgenstern expected utility theorem</strong>.
+          Preferences must be:</p>
+          <ul>
+            <li><strong>complete and transitive</strong>,</li>
+            <li><strong>continuous</strong>, and</li>
+            <li>satisfy <strong>independence</strong>.</li>
+          </ul>
+          <div class="block block--alert">
+            <div class="block__title">Independence: the key axiom</div>
+            <div class="block__body">
+              <p>If $L\succeq M$, then for any lottery $N$ and $0&lt;\alpha&lt;1$,</p>
+              <div class="math">$$\alpha L+(1-\alpha)N \succeq \alpha M+(1-\alpha)N.$$</div>
+              <p>Adding the same lottery component to both options should not reverse their ranking.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="tight" data-frame="6" data-section="Expected utility: the benchmark">
+        <h2>Independence axiom</h2>
+        <div class="slide-body">
+          <p>Suppose $L\succeq M$. Independence requires</p>
+          <div class="math">$$\alpha L+(1-\alpha)N \succeq \alpha M+(1-\alpha)N, \qquad \alpha&gt;0.$$</div>
+          <p>Under expected utility, the difference between the two mixtures is</p>
+          <div class="math">$$\begin{aligned}
+      &amp;EU\bigl(\alpha L+(1-\alpha)N\bigr)\\
+      &amp;\quad-EU\bigl(\alpha M+(1-\alpha)N\bigr)\\
+      &amp;=\alpha EU(L)+(1-\alpha)EU(N)\\
+      &amp;\quad-\alpha EU(M)-(1-\alpha)EU(N)\\
+      &amp;=\alpha\bigl[EU(L)-EU(M)\bigr].
+      \end{aligned}$$</div>
+          <p>Since $\alpha&gt;0$, the sign of the difference is unchanged.</p>
+          <div class="block">
+            <div class="block__title">Prediction</div>
+            <div class="block__body">A common lottery component cannot reverse the ranking between two lotteries.</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="tight" data-frame="7" data-section="Expected utility: the benchmark">
+        <h2>Independence in plain words: a Skyrim dungeon</h2>
+        <div class="slide-body">
+          <div class="block block--game">
+            <div class="block__title">Two chests behind a door</div>
+            <div class="block__body">W.p. $1-\alpha$ a draugr ambush ends the run (lottery $N$). W.p. $\alpha$ you reach the treasure room and pick chest $L$ (<strong>500 gold for sure</strong>) or chest $M$ (0 or 1200 gold, 50–50).</div>
+          </div>
+          <ul>
+            <li>The ambush does not depend on the chest you pick.</li>
+            <li>If you prefer $L$ in the room, you should prefer “door, then $L$” to “door, then $M$”:<br>$\alpha L+(1-\alpha)N\succeq\alpha M+(1-\alpha)N$.</li>
+          </ul>
+          <div class="block block--alert">
+            <div class="block__title">The paradoxes</div>
+            <div class="block__body">In experiments people <strong>systematically break</strong> this rule.</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="tryit" data-frame="tryit-stp" data-section="St. Petersburg paradox">
+        <h2>Try it: The Doubling Contract</h2>
+        <div class="slide-body tryit__body">
+          <p class="tryit__kicker">Before we name the paradox — make the choice yourself</p>
+          <div class="tryit__card">
+            <div class="tryit__badge" aria-hidden="true">◈</div>
+            <h3>The Doubling Contract</h3>
+            <p>The tavern keeper slides a coin across the table and names his game: he flips until it lands tails, and every heads doubles the crowns already in the pot. The pot keeps growing for as long as your luck holds. How much would you pay for the seat?</p>
+            <button class="pixel-btn" type="button" data-game="stp">▶ Play on this device</button>
+          </div>
+          <p class="tryit__hint">Close it with ✕ to come back here.</p>
+        </div>
+        <div class="game-overlay" data-overlay="stp" role="dialog" aria-modal="true" tabindex="-1" aria-label="The Doubling Contract" hidden aria-hidden="true">
+          <div class="game-overlay__bar">
+            <span class="game-overlay__title">The Doubling Contract</span>
+            <button class="pixel-btn pixel-btn--small pixel-btn--close" type="button" data-close="stp">✕ Close</button>
+          </div>
+          <iframe class="game-overlay__frame" data-src="play.html#stp" title="The Doubling Contract game"></iframe>
+        </div>
+      </section>
+      <section class="tight" data-frame="8" data-section="St. Petersburg paradox">
+        <h2>St. Petersburg paradox: the villager's coin</h2>
+        <div class="slide-body">
+          <div class="block block--game">
+            <div class="block__title">A villager offers a game</div>
+            <div class="block__body">A coin is flipped until the first tails. If tails first appears on flip $k$, you win $2^k$ emeralds. How many emeralds would you pay to play?</div>
+          </div>
+          <div class="math">$$\Pr(k)=2^{-k},\qquad \mathbb{E}[\text{prize}]=\sum_{k=1}^{\infty}2^{-k}\cdot 2^{k}=1+1+1+\dots=\infty .$$</div>
+          <ul>
+            <li>A risk-neutral player should pay <em>any</em> price.</li>
+            <li>In practice almost nobody pays more than $\approx$ 5–20 emeralds.</li>
+          </ul>
+          <div class="block">
+            <div class="block__title">Paradox</div>
+            <div class="block__body">Expected <em>value</em> gives an absurd answer (Bernoulli, 1738).</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PART 2 — frames 9–15 (S2) -->
+      <section data-frame="9" data-section="St. Petersburg paradox" class="tight">
+        <h2>Bernoulli’s resolution: concave utility</h2>
+        <div class="slide-body">
+          <p>With wealth $w$ and $u(x)=\ln x$, the maximum price $p$ solves</p>
+          $$
+          \sum_{k=1}^{\infty}2^{-k}\ln\!\big(w+2^{k}-p\big)=\ln w .
+          $$
+          <div class="cols cols--48-50">
+            <div class="col col--center">
+              <table class="tbl tbl--right">
+                <thead>
+                  <tr><th>Wealth $w$</th><th>Price $p$</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td>10</td><td>4.97</td></tr>
+                  <tr><td>100</td><td>7.79</td></tr>
+                  <tr><td>1 000</td><td>10.95</td></tr>
+                  <tr><td>1 000 000</td><td>20.87</td></tr>
+                </tbody>
+              </table>
+              <p class="note-small">(numerical solution, see Appendix)</p>
+            </div>
+            <div class="col">
+              <ul>
+                <li>Each extra emerald is worth less: $u''&lt;0$.</li>
+                <li>If the villager owns only $2^{20}\approx10^6$ emeralds, the expected value is just $21$.</li>
+              </ul>
+            </div>
+          </div>
+          <div class="block">
+            <div class="block__title">Takeaway</div>
+            <div class="block__body">This paradox <em>created</em> EU. But prizes $e^{2^k}$ break log utility again $\Rightarrow$ $u$ must be bounded.</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="tryit" data-frame="tryit-allais" data-section="Allais paradox">
+        <h2>Try it: The Caravan Lockboxes</h2>
+        <div class="slide-body tryit__body">
+          <p class="tryit__kicker">Before we name the paradox — make the choice yourself</p>
+          <div class="tryit__card">
+            <div class="tryit__badge" aria-hidden="true">▣</div>
+            <h3>The Caravan Lockboxes</h3>
+            <p>A caravan trader offers you one of two sealed lockboxes instead of payment. Both are heavy, both are yours the moment you choose, and the road through raider country decides what actually reaches the coast. Which one do you carry?</p>
+            <button class="pixel-btn" type="button" data-game="allais">▶ Play on this device</button>
+          </div>
+          <p class="tryit__hint">Close it with ✕ to come back here.</p>
+        </div>
+        <div class="game-overlay" data-overlay="allais" role="dialog" aria-modal="true" tabindex="-1" aria-label="The Caravan Lockboxes" hidden aria-hidden="true">
+          <div class="game-overlay__bar">
+            <span class="game-overlay__title">The Caravan Lockboxes</span>
+            <button class="pixel-btn pixel-btn--small pixel-btn--close" type="button" data-close="allais">✕ Close</button>
+          </div>
+          <iframe class="game-overlay__frame" data-src="play.html#allais" title="The Caravan Lockboxes game"></iframe>
+        </div>
+      </section>
+      <section data-frame="10" data-section="Allais paradox" class="tight">
+        <h2>Allais paradox: a rare drop in OSRS (vote!)</h2>
+        <div class="slide-body">
+          <div class="block block--game">
+            <div class="block__title">Old School RuneScape: you got a rare drop. How do you cash it in?</div>
+            <div class="block__body">
+              <p><strong>Question 1.</strong> Which do you take?</p>
+              <ul>
+                <li>$A$: sell on the Grand Exchange: <strong>2 400k gp for sure</strong>.</li>
+                <li>$B$: walk it through the Wilderness to a buyer: 2 500k gp w.p. 0.33, 2 400k w.p. 0.66, a player killer takes it w.p. 0.01.</li>
+              </ul>
+              <div class="fragment fragment--collapse">
+                <p><strong>Question 2.</strong> Two deep-Wilderness trips. Which do you take?</p>
+                <ul>
+                  <li>$C$: 2 500k gp w.p. 0.33, nothing w.p. 0.67.</li>
+                  <li>$D$: 2 400k gp w.p. 0.34, nothing w.p. 0.66.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          <div class="block fragment fragment--collapse">
+            <div class="block__title">Typical answers (Kahneman &amp; Tversky, 1979)</div>
+            <div class="block__body">82% choose $A$ and 83% choose $C$.</div>
+          </div>
+        </div>
+      </section>
+
+      <section data-frame="11" data-section="Allais paradox" class="tight">
+        <h2><span>Why $A\succ B$ and $C\succ D$ is inconsistent</span></h2>
+        <div class="slide-body">
+          <p>Amounts in thousands of gp; normalize $u(0)=0$. Expected utility gives:</p>
+          $$
+          \begin{align*}
+          A\succ B &amp;\iff u(2400) &gt; 0.33\,u(2500)+0.66\,u(2400)\\
+                   &amp;\iff 0.34\,u(2400) &gt; 0.33\,u(2500),\\[4pt]
+          C\succ D &amp;\iff 0.33\,u(2500) &gt; 0.34\,u(2400).
+          \end{align*}
+          $$
+          $$
+          0.34\,u(2400)&gt;0.33\,u(2500)&gt;0.34\,u(2400)\qquad \bot
+          $$
+          <div class="block">
+            <div class="block__title">Common consequence</div>
+            <div class="block__body">$C,D$ are $A,B$ with the common part “2 400 w.p. 0.66” replaced by “nothing w.p. 0.66”. Independence says this cannot matter; people react because $A$ is <strong>certain</strong>.</div>
+          </div>
+        </div>
+      </section>
+
+      <section data-frame="12" data-section="Allais paradox" class="tight">
+        <h2>The probability triangle (Marschak–Machina)</h2>
+        <div class="slide-body">
+          <div class="cols cols--52-46">
+            <div class="col">
+              <div class="figure figure--triangle" data-figure="triangle" role="img" aria-label="Probability triangle with lotteries A, B, C and D"></div>
+            </div>
+            <div class="col">
+              <ul>
+                <li>Points = lotteries over $\{0,2400,2500\}$.</li>
+                <li>EU indifference curves: <strong>parallel lines</strong> (dashed).</li>
+                <li>$AB \parallel DC$, so EU ranks both pairs alike: $A\succ B \Leftrightarrow D\succ C$.</li>
+                <li>$A$ and $C$ together need curves that <strong class="nowrap">fan out</strong>.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section data-frame="13" data-section="Allais paradox" class="script">
+        <h2>Paradoxical pattern of choice</h2>
+        <div class="slide-body">
+          <p>Consider four lotteries $L_1,L_2,L_3,L_4 \in \mathcal{L}$ over outcomes $x_1,x_2,x_3 \in \mathcal{X}$.</p>
+          <p>Each lottery is represented by a probability distribution:</p>
+          $$
+          L_j=\{(x_i,p_{ij})\}_{i=1}^3,
+          \qquad
+          \sum_{i=1}^3p_{ij}=1.
+          $$
+          <p>Under expected utility, these preferences require</p>
+          $$
+          \sum_{i=1}^3p_{i1}u(x_i)&gt;
+          \sum_{i=1}^3p_{i2}u(x_i),
+          $$
+          $$
+          \sum_{i=1}^3p_{i4}u(x_i)&gt;
+          \sum_{i=1}^3p_{i3}u(x_i).
+          $$
+          <div class="block">
+            <div class="block__title">Question</div>
+            <div class="block__body">Can a single utility function satisfy both inequalities while respecting independence?</div>
+          </div>
+        </div>
+      </section>
+
+      <section data-frame="14" data-section="Allais paradox" class="tight">
+        <h2>Independence and inconsistent preferences</h2>
+        <div class="slide-body">
+          <p>Without loss of generality, suppose the observed preferences satisfy</p>
+          $$
+          L_1\succ L_2,\qquad L_4\succ L_3.
+          $$
+          <p>For some $\alpha\in(0,1)$, let</p>
+          $$
+          L_3=\alpha L_1+(1-\alpha)N,\qquad
+          L_4=\alpha L_2+(1-\alpha)N.
+          $$
+          <p>By the independence axiom, $L_1\succ L_2$ implies $L_3\succ L_4$. This contradicts the observed preference $L_4\succ L_3$.</p>
+          <div class="block block--alert">
+            <div class="block__title">Conclusion</div>
+            <div class="block__body">The observed reversal violates independence: adding the same lottery component in the same proportions cannot reverse the preference ranking.</div>
+          </div>
+        </div>
+      </section>
+
+      <section data-frame="15" data-section="Allais paradox" class="tight">
+        <h2>Generalized Allais paradox</h2>
+        <div class="slide-body">
+          <p>Let $x_H&gt;x_M&gt;x_0$, $p,q\in(0,1)$, and define</p>
+          $$
+          \begin{aligned}
+          \mathcal{P}_A&amp;=\delta_{x_M},&amp;
+          \mathcal{P}_B&amp;=p\delta_{x_H}+(1-p)\delta_{x_0},\\
+          \mathcal{P}_C&amp;=q\delta_{x_M}+(1-q)\delta_{x_0},&amp;
+          \mathcal{P}_D&amp;=pq\delta_{x_H}+(1-pq)\delta_{x_0}.
+          \end{aligned}
+          $$
+          <p>Suppose</p>
+          $$
+          \mathcal{P}_A\succ\mathcal{P}_B,
+          \qquad
+          \mathcal{P}_D\succ\mathcal{P}_C.
+          $$
+          <p>Expected utility, with $u(x_0)=0$, implies</p>
+          $$
+          \begin{aligned}
+          u(x_M)&amp;&gt;p\,u(x_H),\\
+          pq\,u(x_H)&amp;&gt;q\,u(x_M)
+          \;\Longrightarrow\;
+          p\,u(x_H)&gt;u(x_M).
+          \end{aligned}
+          $$
+          $$
+          \boxed{u(x_M)&gt;p\,u(x_H)&gt;u(x_M)}
+          \qquad\bot
+          $$
+          <div class="block block--alert block--untitled">
+            <div class="block__body">$\text{Violation of independence} \;\Longrightarrow\; \text{no expected-utility representation.}$</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PART 3 — frames 16–22 (S3) -->
+      <section data-frame="16" data-section="Allais paradox" class="tight">
+        <h2>Common ratio effect: a Minecraft expedition</h2>
+        <div class="slide-body">
+          <div class="block block--game">
+            <div class="block__title">Two plans for getting diamonds</div>
+            <div class="block__body">
+              <p>$P_A$: villager trade, <strong>30 diamonds for sure</strong>.<br>
+              $P_B$: deep cave, <strong>40 diamonds</strong> w.p. 0.8 (a creeper w.p. 0.2).</p>
+              <p>Same plans, but you first need to find a stronghold (w.p. $q=0.25$):<br>
+              $P_C$: 30 w.p. 0.25&emsp;&emsp;$P_D$: 40 w.p. $0.25\times0.8=0.20$.</p>
+            </div>
+          </div>
+          <ul>
+            <li>$x_H=40$, $x_M=30$, $x_0=0$, $p=0.8$, $q=0.25$.</li>
+            <li>Typical: $P_A\succ P_B$ (“sure thing!”) but $P_D\succ P_C$ (“20% vs 25%, go for 40”).</li>
+          </ul>
+          <div class="block block--untitled">
+            <div class="block__body">Scaling all winning chances by $q$ should not change the choice — but it does.</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="tryit" data-frame="tryit-ellsberg" data-section="Ellsberg paradox">
+        <h2>Try it: The Fixer's Crate</h2>
+        <div class="slide-body tryit__body">
+          <p class="tryit__kicker">Before we name the paradox — make the choice yourself</p>
+          <div class="tryit__card">
+            <div class="tryit__badge" aria-hidden="true">✦</div>
+            <h3>The Fixer's Crate</h3>
+            <p>A fixer slides a crate of 90 chips across the table. Thirty are stamped with a red seal; the other sixty are split between two marks nobody at the table will name. Place your bet on the mark you draw.</p>
+            <button class="pixel-btn" type="button" data-game="ellsberg">▶ Play on this device</button>
+          </div>
+          <p class="tryit__hint">Close it with ✕ to come back here.</p>
+        </div>
+        <div class="game-overlay" data-overlay="ellsberg" role="dialog" aria-modal="true" tabindex="-1" aria-label="The Fixer's Crate" hidden aria-hidden="true">
+          <div class="game-overlay__bar">
+            <span class="game-overlay__title">The Fixer's Crate</span>
+            <button class="pixel-btn pixel-btn--small pixel-btn--close" type="button" data-close="ellsberg">✕ Close</button>
+          </div>
+          <iframe class="game-overlay__frame" data-src="play.html#ellsberg" title="The Fixer's Crate game"></iframe>
+        </div>
+      </section>
+
+      <section data-frame="17" data-section="Ellsberg paradox" class="tight">
+        <h2>Ellsberg paradox: the Khajiit’s sack of gems</h2>
+        <div class="slide-body">
+          <div class="block block--game">
+            <div class="block__title">A merchant’s sack holds 90 gems</div>
+            <div class="block__body">
+              <p>30 <strong>rubies</strong>; 60 <strong>emeralds</strong> or <strong>sapphires</strong> in an <em>unknown</em> mix. Draw one blindly; win 100 gold if your bet is right.</p>
+            </div>
+          </div>
+          <div class="center">
+            <table class="tbl tbl--center">
+              <thead>
+                <tr><th>Bet</th><th>Ruby (30)</th><th>Emerald (?)</th><th>Sapphire (?)</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>I</td><td>100</td><td>0</td><td>0</td></tr>
+                <tr class="mid"><td>II</td><td>0</td><td>100</td><td>0</td></tr>
+                <tr><td>III</td><td>100</td><td>0</td><td>100</td></tr>
+                <tr><td>IV</td><td>0</td><td>100</td><td>100</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="block fragment fragment--collapse">
+            <div class="block__title">Typical choice</div>
+            <div class="block__body">I $\succ$ II (“I know it is 1/3”) and IV $\succ$ III (“I know it is 2/3”).</div>
+          </div>
+        </div>
+      </section>
+
+      <section data-frame="18" data-section="Ellsberg paradox" class="tight">
+        <h2>Why no beliefs can explain it</h2>
+        <div class="slide-body">
+          <p>Let $\pi_R=\tfrac13$, $\pi_E$, $\pi_S$ be the player’s subjective probabilities, $\pi_E+\pi_S=\tfrac23$.</p>
+          <div class="math">$$\begin{align*}
+      \text{I}\succ\text{II} &amp;\iff \pi_R\,u(100) &gt; \pi_E\,u(100) \iff \pi_R&gt;\pi_E,\\
+      \text{IV}\succ\text{III} &amp;\iff (\pi_E+\pi_S)\,u(100) &gt; (\pi_R+\pi_S)\,u(100) \iff \pi_E&gt;\pi_R .
+      \end{align*}$$</div>
+          <ul>
+            <li>Contradiction for <em>every</em> belief and <em>every</em> $u$.</li>
+            <li>“Sapphire” is a common consequence $\Rightarrow$ Savage’s <strong>sure-thing principle</strong> fails.</li>
+          </ul>
+          <div class="block">
+            <div class="block__title">Risk vs. ambiguity</div>
+            <div class="block__body">Allais: known odds, non-linear attitude to <em>risk</em>.<br>
+            Ellsberg: unknown odds, people dislike <strong>ambiguity</strong>.</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="tryit" data-frame="tryit-framing" data-section="Framing and loss aversion">
+        <h2>Try it: The Jarl's Orders</h2>
+        <div class="slide-body tryit__body">
+          <p class="tryit__kicker">Before we name the paradox — make the choice yourself</p>
+          <div class="tryit__card">
+            <div class="tryit__badge" aria-hidden="true">▲</div>
+            <h3>The Jarl's Orders</h3>
+            <p>A dragon is closing on Whiterun, and the Jarl has two plans for the 600 citizens still inside the walls. He needs your signature before the horns sound. Which order do you sign?</p>
+            <button class="pixel-btn" type="button" data-game="framing">▶ Play on this device</button>
+          </div>
+          <p class="tryit__hint">Close it with ✕ to come back here.</p>
+        </div>
+        <div class="game-overlay" data-overlay="framing" role="dialog" aria-modal="true" tabindex="-1" aria-label="The Jarl's Orders" hidden aria-hidden="true">
+          <div class="game-overlay__bar">
+            <span class="game-overlay__title">The Jarl's Orders</span>
+            <button class="pixel-btn pixel-btn--small pixel-btn--close" type="button" data-close="framing">✕ Close</button>
+          </div>
+          <iframe class="game-overlay__frame" data-src="play.html#framing" title="The Jarl's Orders game"></iframe>
+        </div>
+      </section>
+
+      <section data-frame="19" data-section="Framing and loss aversion" class="tight">
+        <h2>Framing: Whiterun under dragon attack</h2>
+        <div class="slide-body">
+          <div class="block block--game">
+            <div class="block__title">A dragon will kill 600 citizens unless the Jarl acts</div>
+            <div class="block__body">
+              <p><strong>Frame 1 (lives saved):</strong></p>
+              <ul>
+                <li><div class="plan-row"><span>Plan A: 200 people will be saved.</span><span class="pct">[72%]</span></div></li>
+                <li><div class="plan-row"><span>Plan B: 1/3 chance 600 saved, 2/3 chance nobody saved.</span><span class="pct">[28%]</span></div></li>
+              </ul>
+              <p><strong>Frame 2 (deaths):</strong></p>
+              <ul>
+                <li><div class="plan-row"><span>Plan C: 400 people will die.</span><span class="pct">[22%]</span></div></li>
+                <li><div class="plan-row"><span>Plan D: 1/3 chance nobody dies, 2/3 chance 600 die.</span><span class="pct">[78%]</span></div></li>
+              </ul>
+            </div>
+          </div>
+          <div class="block">
+            <div class="block__title">Paradox (Tversky &amp; Kahneman, 1981; Lecture 5)</div>
+            <div class="block__body">A $\equiv$ C and B $\equiv$ D. Only the <em>words</em> changed, yet the majority switches: risk-averse for gains, risk-seeking for losses.</div>
+          </div>
+        </div>
+      </section>
+
+      <section data-frame="20" data-section="Framing and loss aversion" class="tight">
+        <h2>Loss aversion and small bets: hardcore mode</h2>
+        <div class="slide-body">
+          <div class="block block--game">
+            <div class="block__title">A 50–50 coin bet in a hardcore world</div>
+            <div class="block__body">
+              <p>Lose 1&#8239;000 emeralds or win 1&#8239;050 emeralds. Do you accept?</p>
+            </div>
+          </div>
+          <ul>
+            <li>Most say <strong>no</strong>, although the expected value is $+25$.</li>
+            <li><strong>Rabin (2000):</strong> rejecting it at <em>every</em> wealth level forces EU to reject a 50–50 bet: lose 20&#8239;000 or win <em>any</em> amount. Absurd.</li>
+          </ul>
+          <div class="block">
+            <div class="block__title">Explanation: losses hurt more than gains please</div>
+            <div class="block__body">With $\lambda\approx2.25$: $0.5\cdot1050-0.5\cdot2.25\cdot1000=-600&lt;0$ $\Rightarrow$ reject.<br>
+            Losing your inventory hurts more than finding the same loot.</div>
+          </div>
+        </div>
+      </section>
+
+      <section data-frame="21" data-section="Explaining the paradoxes" class="tight">
+        <h2>Prospect theory (Kahneman &amp; Tversky)</h2>
+        <div class="slide-body">
+          <div class="math">$$V(L)=\sum_i w(p_i)\,v(x_i),\quad v(x)=\begin{cases}x^{\alpha}, &amp; x\ge0\\ -\lambda(-x)^{\beta}, &amp; x&lt;0\end{cases},\quad w(p)=\frac{p^{\gamma}}{\big(p^{\gamma}+(1-p)^{\gamma}\big)^{1/\gamma}}$$</div>
+          <p class="note-small">$x$ = gain/loss vs. a <strong>reference point</strong>; $\alpha=\beta=0.88$, $\lambda=2.25$, $\gamma=0.61$.</p>
+          <div class="cols cols--50-50">
+            <div class="col">
+              <img class="plot" src="assets/figures/value-function.svg" alt="Value function: concave for gains, convex and steeper for losses">
+              <p class="plot-caption">concave for gains, convex and steeper for losses</p>
+            </div>
+            <div class="col">
+              <img class="plot" src="assets/figures/probability-weighting.svg" alt="Probability weighting: small probabilities overweighted, large probabilities underweighted">
+              <p class="plot-caption">small $p$ overweighted, large $p$ underweighted</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section data-frame="22" data-section="Explaining the paradoxes" class="tight">
+        <h2>Prospect theory reproduces the paradoxes</h2>
+        <div class="slide-body">
+          <table class="tbl">
+            <thead>
+              <tr><th>Example</th><th>Option</th><th class="num">$V$</th><th>Prediction</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Allais (OSRS drop)</td><td>$A$: 2400 sure</td><td class="num">943.2</td><td rowspan="2">$A\succ B$ $\checkmark$</td></tr>
+              <tr><td></td><td>$B$: (2500,.33; 2400,.66)</td><td class="num">806.5</td></tr>
+              <tr><td></td><td>$C$: (2500,.33)</td><td class="num">326.7</td><td rowspan="2">$C\succ D$ $\checkmark$</td></tr>
+              <tr><td></td><td>$D$: (2400,.34)</td><td class="num">320.1</td></tr>
+              <tr class="rule"><td colspan="4"></td></tr>
+              <tr><td>Common ratio (diamonds)</td><td>$P_A$: 30 sure</td><td class="num">19.9</td><td rowspan="2">$P_A\succ P_B$ $\checkmark$</td></tr>
+              <tr><td></td><td>$P_B$: (40,.8)</td><td class="num">15.6</td></tr>
+              <tr><td></td><td>$P_C$: (30,.25)</td><td class="num">5.8</td><td rowspan="2">$P_D\succ P_C$ $\checkmark$</td></tr>
+              <tr><td></td><td>$P_D$: (40,.20)</td><td class="num">6.7</td></tr>
+            </tbody>
+          </table>
+          <ul>
+            <li><strong>Certainty effect:</strong> $w(1)=1$ but $w(.66)+w(.33)=0.84$.</li>
+            <li><strong>Framing:</strong> “saved” = gains $\Rightarrow$ safe plan; “die” = losses $\Rightarrow$ gamble.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- PART 4 — frames 23–29 (S4) -->
+      <section class="tight" data-frame="23" data-section="Explaining the paradoxes">
+        <h2>Map of paradoxes and fixes</h2>
+        <div class="slide-body">
+          <table class="tbl tbl--fixed">
+            <colgroup>
+              <col class="c22">
+              <col class="c27">
+              <col class="c48">
+            </colgroup>
+            <thead>
+              <tr>
+                <th>Paradox</th>
+                <th>What fails</th>
+                <th>Possible explanation</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>St. Petersburg</td>
+                <td>Expected value</td>
+                <td>Concave, bounded utility (Bernoulli)</td>
+              </tr>
+              <tr>
+                <td>Allais / common ratio</td>
+                <td>Independence axiom</td>
+                <td>Probability weighting: prospect theory, rank-dependent utility (Quiggin, 1982)</td>
+              </tr>
+              <tr>
+                <td>Ellsberg</td>
+                <td>Sure-thing principle, a single prior</td>
+                <td>Ambiguity aversion: maxmin EU over a set of priors (Gilboa &amp; Schmeidler, 1989)</td>
+              </tr>
+              <tr>
+                <td>Framing</td>
+                <td>Invariance to description</td>
+                <td>Reference point, gains vs. losses (prospect theory)</td>
+              </tr>
+              <tr>
+                <td>Small-bet risk aversion</td>
+                <td>EU over total wealth</td>
+                <td>Loss aversion $\lambda&gt;1$</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="tight" data-frame="24" data-section="Explaining the paradoxes">
+        <h2>Ambiguity aversion fixes the gem sack</h2>
+        <div class="slide-body">
+          <p><strong>Maxmin expected utility</strong> (Gilboa &amp; Schmeidler, 1989): the player considers a <em>set</em> of possible beliefs and judges each bet by the <em>worst</em> one.</p>
+          <ul>
+            <li>Possible beliefs: $\pi_R=\tfrac13$, $\pi_E\in[0,\tfrac23]$, $\pi_S=\tfrac23-\pi_E$.</li>
+            <li>Worst-case winning chance of each bet:</li>
+          </ul>
+          <div class="center">
+            <table class="tbl tbl--center">
+              <thead>
+                <tr>
+                  <th>Bet</th>
+                  <th>I</th>
+                  <th>II</th>
+                  <th>III</th>
+                  <th>IV</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Worst-case chance</td>
+                  <td>$\tfrac13$</td>
+                  <td>$0$</td>
+                  <td>$\tfrac13$</td>
+                  <td>$\tfrac23$</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="block">
+            <div class="block__title">Result</div>
+            <div class="block__body">I $\succ$ II and IV $\succ$ III — exactly the observed choices.</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="tight" data-frame="25" data-section="Conclusion">
+        <h2>Conclusion</h2>
+        <div class="slide-body">
+          <ul>
+            <li>EU rests on the <strong>independence axiom</strong>: parallel, linear indifference curves.</li>
+            <li>St. Petersburg: we need <em>utility</em>, not expected <em>value</em>.</li>
+            <li>Allais / common ratio: <strong>certainty</strong> and probabilities are weighted non-linearly.</li>
+            <li>Ellsberg: people dislike <strong>unknown odds</strong>.</li>
+            <li>Framing / loss aversion: choices depend on a <strong>reference point</strong>.</li>
+            <li>Prospect theory, RDU and maxmin EU explain the patterns; EU stays the normative benchmark.</li>
+          </ul>
+          <div class="block block--game">
+            <div class="block__title">In game terms</div>
+            <div class="block__body">Players love sure loot, fear losing their inventory, and avoid chests with unknown odds.</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="plain" data-frame="26" data-section="Conclusion">
+        <div class="plain__inner">
+          <p class="plain__thanks">Thank you for your attention!</p>
+        </div>
+      </section>
+
+      <section class="tight" data-frame="27" data-section="Appendix">
+        <h2>Appendix: St. Petersburg computation</h2>
+        <div class="slide-body">
+          <div class="item">
+            <span class="item__bullet" aria-hidden="true">○</span>
+            <div class="item__body">
+              <p>Payoff $2^k$ w.p. $2^{-k}$, $k=1,2,\dots$; utility $u(x)=\ln x$; wealth $w$.</p>
+            </div>
+          </div>
+          <div class="item">
+            <span class="item__bullet" aria-hidden="true">○</span>
+            <div class="item__body">
+              <p>Willingness to pay $p$ is the root of</p>
+              <div class="math">$$f(p)=\sum_{k=1}^{K}2^{-k}\ln\!\big(w+2^k-p\big)-\ln w=0,$$</div>
+              <p>truncated at $K=200$ (the tail is negligible), solved with Brent's method.</p>
+            </div>
+          </div>
+          <div class="item">
+            <span class="item__bullet" aria-hidden="true">○</span>
+            <div class="item__body">
+              <p>Finite bankroll $B=2^{n}$: payoff $\min(2^k,B)$, so</p>
+              <div class="math">$$\mathbb{E}=\sum_{k=1}^{n}1+\sum_{k&gt;n}2^{-k}2^{n}=n+1 .$$</div>
+              <p>With $B=2^{20}$: $\mathbb{E}=21$; with $B=2^{30}\approx10^9$: $\mathbb{E}=31$.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="tight" data-frame="28" data-section="Appendix">
+        <h2>Appendix: prospect theory computations</h2>
+        <div class="slide-body">
+          <div class="math">$$v(x)=x^{0.88},\qquad w(p)=\frac{p^{0.61}}{\big(p^{0.61}+(1-p)^{0.61}\big)^{1/0.61}}$$</div>
+          <div class="center">
+            <table class="tbl tbl--compact tbl--center">
+              <tbody>
+                <tr>
+                  <td>$p$</td>
+                  <td>0.01</td>
+                  <td>0.20</td>
+                  <td>0.25</td>
+                  <td>0.33</td>
+                  <td>0.34</td>
+                  <td>0.66</td>
+                  <td>0.80</td>
+                  <td>0.99</td>
+                </tr>
+                <tr>
+                  <td>$w(p)$</td>
+                  <td>0.055</td>
+                  <td>0.261</td>
+                  <td>0.291</td>
+                  <td>0.334</td>
+                  <td>0.339</td>
+                  <td>0.509</td>
+                  <td>0.607</td>
+                  <td>0.912</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="math">$$
+            \begin{align*}
+            V(B)&amp;=w(.33)\,v(2500)+w(.66)\,v(2400)=806.5 &lt; v(2400)=943.2=V(A),\\
+            V(C)&amp;=w(.33)\,v(2500)=326.7 &gt; w(.34)\,v(2400)=320.1=V(D).
+            \end{align*}
+          $$</div>
+          <p class="note-small">Note: this is the simple (separable) weighting of original prospect theory; cumulative prospect theory weights cumulative probabilities and gives the same ranking here.</p>
+        </div>
+      </section>
+
+      <section data-frame="29a" data-section="References">
+        <h2>References</h2>
+        <div class="slide-body">
+          <ul class="refs no-bullets">
+            <li>Allais, M. (1953). Le comportement de l’homme rationnel devant le risque: critique des postulats et axiomes de l’école américaine. <em class="ref-title">Econometrica</em>, 21(4), 503–546.</li>
+            <li>Bernoulli, D. (1954). Exposition of a New Theory on the Measurement of Risk. <em class="ref-title">Econometrica</em>, 22(1), 23–36. <span class="ref-note">[Translation of the 1738 original]</span></li>
+            <li>Ellsberg, D. (1961). Risk, Ambiguity, and the Savage Axioms. <em class="ref-title">Quarterly Journal of Economics</em>, 75(4), 643–669.</li>
+            <li>Kahneman, D., &amp; Tversky, A. (1979). Prospect Theory: An Analysis of Decision under Risk. <em class="ref-title">Econometrica</em>, 47(2), 263–291.</li>
+            <li>Tversky, A., &amp; Kahneman, D. (1981). The Framing of Decisions and the Psychology of Choice. <em class="ref-title">Science</em>, 211(4481), 453–458.</li>
+            <li>Quiggin, J. (1982). A Theory of Anticipated Utility. <em class="ref-title">Journal of Economic Behavior &amp; Organization</em>, 3(4), 323–343.</li>
+          </ul>
+        </div>
+      </section>
+
+      <section data-frame="29b" data-section="References">
+        <h2>References (cont.)</h2>
+        <div class="slide-body">
+          <ul class="refs no-bullets">
+            <li>Machina, M. J. (1987). Choice under Uncertainty: Problems Solved and Unsolved. <em class="ref-title">Journal of Economic Perspectives</em>, 1(1), 121–154.</li>
+            <li>Gilboa, I., &amp; Schmeidler, D. (1989). Maxmin Expected Utility with Non-Unique Prior. <em class="ref-title">Journal of Mathematical Economics</em>, 18(2), 141–153.</li>
+            <li>Tversky, A., &amp; Kahneman, D. (1992). Advances in Prospect Theory: Cumulative Representation of Uncertainty. <em class="ref-title">Journal of Risk and Uncertainty</em>, 5(4), 297–323.</li>
+            <li>Mas-Colell, A., Whinston, M. D., &amp; Green, J. R. (1995). <em class="ref-title">Microeconomic Theory</em>. Oxford University Press.</li>
+            <li>Rabin, M. (2000). Risk Aversion and Expected-Utility Theory: A Calibration Theorem. <em class="ref-title">Econometrica</em>, 68(5), 1281–1292.</li>
+            <li>Celov, D. (2026). <em class="ref-title">Microeconomic Analysis, Lecture 5: Uncertainty</em>. Lecture slides, Vilnius University.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- QR slide — after References -->
+      <section class="qr-slide" data-frame="qr" data-section="References">
+        <h2>Play the games</h2>
+        <div class="slide-body">
+          <div class="qr-card"><div id="qr-code" role="img" aria-label="QR code for the games hub"></div></div>
+          <p class="qr-lead">Scan to open the games hub on your phone.</p>
+          <p class="qr-url" id="qr-url">https://example.github.io/paradoxes-of-choices/</p>
+          <p class="qr-hint">No install. No account. Your choices stay on your device.</p>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- Vendored libraries: classic scripts, relative paths, works on file:// -->
+  <script src="vendor/reveal/reveal.js"></script>
+  <script src="vendor/reveal/plugin/math/math.js"></script>
+  <script src="vendor/reveal/plugin/notes/notes.js"></script>
+  <script src="vendor/qrcode/qrcode.js"></script>
+  <script src="config.js"></script>
+  <script src="js/figures.js"></script>
+  <script src="js/tryit.js"></script>
+  <script src="js/deck.js"></script>
+</body>
+</html>

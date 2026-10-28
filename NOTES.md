@@ -6,9 +6,10 @@ Anyone (human or agent) should be able to resume from this file alone. Update it
 
 ## Status
 
-- **Current phase:** Phase 0 complete; 🛑 **waiting for explicit go-ahead for Phase 1**.
-- **Next step:** on approval, Phase 1 (deck) — vendor reveal.js + KaTeX locally, scaffold `docs/`, then run the six builder subagents in `PLAN.md` §6.
-- **Do not:** touch `Microeconomic_analysis__Copy_/` (the LaTeX sources), start Phase 2, or push to any remote.
+- **Current phase:** Phase 1 (deck conversion) **complete and committed locally**.
+- **Next step:** 🛑 **waiting for explicit go-ahead for Phase 2** (game engine + first game). Do not start it.
+- **Do not:** touch `Microeconomic_analysis__Copy_/` (the LaTeX sources), push to any remote, or change repository settings. Ask before changing `CONFIG.siteUrl` or any repo setting.
+- **Open the result:** double-click `docs/index.html` → **▶ Presentation** (`docs/deck.html`), or double-click `docs/deck.html` directly. `S` = speaker view; `F` = fullscreen; arrows/space = next.
 
 ## Phase log
 
@@ -21,59 +22,96 @@ Anyone (human or agent) should be able to resume from this file alone. Update it
 | Frame-by-frame inventory, frames 1–15 | `notes/phase0/frames-a.md` |
 | Frame-by-frame inventory, frames 16–29 | `notes/phase0/frames-b.md` |
 | Preamble / KaTeX / figures / bibliography audit | `notes/phase0/preamble.md` |
-| Independent review + fixes | `notes/phase0/review.md` |
+| Independent review + fixes | `notes/phase0/review.md`, `notes/phase0/plan-review.md` |
 
-**Subagents that ran in Phase 0**
+Phase 0 subagents: A (`ses_e7db81a10ffeTCGBkuPKPYRXLQ`), B (`ses_e7db81a0fffeLKHGdLiTTGDZOv`), C (`ses_e7db81a0fffdliGDuvQQu5ol1G`), R (`ses_e7dad5e99ffeJRUdHq2NX6aB86`), R2 (`ses_e7d97e77cffehvv2INWP7C6XfC`).
+
+### Phase 1 — Deck conversion (done, 2026-10-28)
+
+**Scaffold built by the coordinator** (before any builder ran):
+
+- `docs/vendor/` — reveal.js **4.6.1** (reveal.css/js, math + notes plugins), KaTeX **0.16.11** (katex.min.js/css, auto-render, 60 font files), qrcode-generator **1.4.4**, Press Start 2P (TTF + OFL). No CDN.
+- `docs/config.js` — title, subtitle, authors, supervisor, `katexMacros: { "\\X": "\\mathcal{X}" }`, `assets.ui_mif`, `siteUrl` placeholder, `games: {}`.
+- `docs/css/theme.css`, `docs/css/deck.css` — palette from `VUMIF.sty` (`blue #02487F`, block `#262686`/`#E9E9F3`, alert `#143E5F`/`#E8ECEF`, game `#2E7D32`/`#EEF5EF`, bullets `#3333B3`), blocks, tables, columns, title slide, TOC, Try-it overlay, QR.
+- `docs/deck.html` skeleton, `docs/index.html` start screen, `docs/js/deck.js` (footline `n / N`, figure injection, overflow safety net, fragment re-fit), `docs/play.html` Phase 1 placeholder, `docs/.nojekyll`.
+
+**Builders (parallel; each owned only its files):**
 
 | ID | Session | Task | Result |
 |---|---|---|---|
-| A | `ses_e7db81a10ffeTCGBkuPKPYRXLQ` | Inventory frames 1–15 | 15/15 frames, 20 display groups, 69 inline exprs; 2 `\pause`s located; no notes |
-| B | `ses_e7db81a0fffeLKHGdLiTTGDZOv` | Inventory frames 16–29 | 14/14 frames, 5 tables cell-by-cell, 2 pgfplots option-by-option |
-| C | `ses_e7db81a0fffdliGDuvQQu5ol1G` | Preamble, macros, figures, bib | KaTeX 0.16.11 installed and used: 172 segments, 169 clean, 3 extractor artefacts; only `\X` needs a macro; 12 bib entries; 3 TikZ + 1 raster |
-| R | `ses_e7dad5e99ffeJRUdHq2NX6aB86` | Independent review of inventories | PASS WITH FIXES: 5 must-fix, 11 should-fix; 35 numeric spot-checks, **0 mismatches**; 29/29 frames, 6/6 tables, 3/3 TikZ, 12/12 bib |
-| R2 | `ses_e7d97e77cffehvv2INWP7C6XfC` | Independent review of `PLAN.md` / `ASSETS.md` | PASS WITH FIXES: 8 must-fix. Found **two wrong game verdicts** (Allais B+D, Ellsberg II+III were mirror contradictions marked consistent), a reversed inequality, a wrong `gray!70` hex (#A6A6A6, not #595959), a Try-it merge flaw, and asset-spec contradictions. All fixed; re-check left 11 residuals, then all fixed |
+| S1 | `ses_e7d7eeb2bffenEFP8HoAz6rom2` | Frames 1–8 → `notes/phase1/part-1.html` | 8 sections, title/TOC/EU/StP; marker `<!-- tryit:stp -->` before frame 8; `script` frame 5; verified 33 math segments, 0 KaTeX errors |
+| S2 | `ses_e7d7eeb2affegcTSON1SWXVJdo` | Frames 9–15 → `part-2.html` | 7 sections; marker before frame 10; two frame-10 fragments; triangle host; approved `\mathcal{X}` fix; verified 12 display + 38 inline segments |
+| S3 | `ses_e7d7eeb2affdPLRXrlNgCZf2JH` | Frames 16–22 → `part-3.html` | 7 sections; markers before 17 and 19; Ellsberg table, frame-21 plots, frame-22 rowspans; verified 55 math segments |
+| S4 | `ses_e7d7eeb20ffeG4jJf8gNmAiDbp` | Frames 23–29 → `part-4.html` | 8 sections (References 6 + 6), frame-23 fixed table, frame-27 items, frame-28 table; verified 29 math segments, 0 errors |
+| S5 | `ses_e7d7eeb1fffeazxG7Uq9d3bakI` | `tools/make_figures.py`, `docs/js/figures.js`, `docs/assets/figures/*.svg`, `docs/assets/ui/mif.png`, `tools/check_assets.py` | 2 plot SVGs (5.0 × 3.7 cm aspect), inline triangle SVG (7 dashed lines, exact coordinates), logo copied byte-for-byte; checker exits 0 |
+| S6 | `ses_e7d7eeb1effeM4qktU6NP6EfN2` | Four `tryit-*.html`, `tryit.js`, `qr.html` | 4 Try-it sections + QR; true-viewport overlay, lazy `play.html#<id>` iframe, Close/Escape, QR from `CONFIG.siteUrl`; verified at 375/1280 |
 
-**Fix round (after review):** must-fixes and accepted should-fixes were sent back to A, B and C, each editing only its own file.
+**Merge:** the coordinator replaced the four part blocks and the four Try-it markers, copied `tryit.js` into `docs/js/`, and rebuilt `docs/deck.html`. 35 sections.
 
-- A fixed: TOC = 8 sections (not 3); frame 10 overlay = 2 fragments with only the first inside `gameblock`; `align*` is native in display mode; "only frame 10 has inline-only math" → frames 7, 10, 12; all 7 dashed lines cross the triangle; frames 1–2 are not `[plain]`; removed three false flags (`e^{2^k}`, `2^{20}≈10^6`, `W.p.` capitalisation).
-- B fixed: frame 16 section = Allais; Prelec → Tversky–Kahneman (1992); frame 19 heading sizes are both `\small`; three count/line slips.
-- C fixed: title-page logo is bottom-centred; `\vspace` list + px scale; 26 display constructs; `\tag` supported in display mode; frame 19 font-size claim; several line references; §6 retitled so only `\chi` is called an error.
-- C pushed back, correctly: `\vline` is **not** supported by KaTeX 0.16.11 (verified: 0 occurrences in the bundle, 4 failed parses). The plan follows C's evidence, not the reviewer's claim.
+**Review loop (fresh reviewers, did not build):**
 
-**Second review round (PLAN/ASSETS):** the reviewer re-derived all eight game verdict patterns from the source inequalities and found that the plan had marked the **mirror** patterns as consistent. Both games now violate on two of four patterns, computed from the inequalities rather than pattern-matched. Also corrected: `gray!70` = `#A6A6A6`; Try-it slides land via slot markers (S1–S3 write `<!-- tryit:id -->`, S6 supplies the bodies); QR is appended after References as the true last slide; sprites are 32 × 32 displayed at 64/128; the triangle is code-generated in `figures.js`, the two plots are committed SVGs. Final residual check: **CLEAN** (11/11).
+| ID | Session | Review | Verdict | Fixes |
+|---|---|---|---|---|
+| M | `ses_e7d692794ffe6gJXnyehU4dsMc` | Math: every formula/number/frame/reference vs the `.tex`, 29/29 frames, 35 slides | **PASS** — 0 must-fix, 0 should-fix, 6 nits | All 6 nits fixed/re-checked: frame 9 `{rr}` right-aligned; frame 17 `{lccc}` centred; frame 21 caption italic `$p$`; weighting identity `gray` = #808080; frame 28 extra midrule removed (source has none); 29b "References (cont.)" is the expected split marker. Re-check 6/6 PASS. |
+| L | `ses_e7d692794ffdps0wF63G1x9D4L` | Layout: 1280/375, fragments, file://, airplane mode, 0 `.katex-error`, 0 console errors, no h-scroll, speaker view, overlay, QR | **PASS WITH FIXES** — 0 must-fix, 2 should-fix, 4 nits | Should-fix both fixed: (1) overlay moved to `<body>` and `position:fixed` so at 375 the dialog is 375×667, Close 93×52.8, iframe 375×605 (was 31×13 and 1280 wide); (2) focus the dialog, not Close, so Space no longer dismisses; hint promises only ✕ (Esc still works while focus is in the deck). Nits fixed: Thank-you exactly centred (cy 359.99), frame 9/17 alignment, QR quiet zone margin 32. Re-check 6/6 PASS; focus-ring contrast and focus trap accepted as residual nits. After the re-check the coordinator added the `1 / 35` footline to the title slide (beamer's infolines); only the `[plain]` Thank-you frame is now bare. |
+
+**Final self-verification (coordinator):**
+
+- **35 `<section>`s:** `1 … 28, 29a, 29b` + 4 Try-it + QR. 29/29 source frames exactly once; frame 29 split 6 + 6.
+- **0 `.katex-error`**, **169 KaTeX nodes** rendered.
+- **0 console messages / page errors** at 1280 and 375.
+- **0 non-`file://` requests**; deck works with all `http(s)` blocked.
+- **No horizontal scroll** at 1280 or 375 (`scrollWidth == innerWidth`); no slide overflow after all fragments.
+- **Fragments:** exactly 2 on frame 10, 1 on frame 17; initial/revealed states correct; no other slide has fragments.
+- **Overlay:** opens full viewport at 375 and 1280; iframe lazy; Close visible; Escape closes with focus in the deck; focus returns to the same slide/button; reveal does not advance behind it.
+- **QR:** rendered 330 × 330 from the placeholder URL; decodes to `https://example.github.io/paradoxes-of-choices/`.
+- **Speaker view:** `S` opens the speaker window with current/upcoming previews and empty note panes (D9).
+- **Assets:** `python3 tools/check_assets.py` exits 0 (logo 244 × 244; both SVGs valid, aspect 1.351).
+- **Screenshots:** 1280 for all 35 slides and 375 spot checks were inspected; no clipping.
+
+**Commit:** `git log -1` → Phase 1 commit (local only, nothing pushed).
 
 ## Decisions made so far
 
 All in `PLAN.md` §0 (D1–D10). The ones likely to be revisited:
 
-1. **16:9 at 1280 × 720**, though the source is 4:3 (128 × 96 mm). 1 cm = 100 px mapping.
+1. **16:9 at 1280 × 720**, though the source is 4:3 (128 × 96 mm). **Important correction to the plan's rationale:** at 1 cm = 100 px the web canvas is 12.8 × 7.2 cm — same scale and same absolute width, but **25 % less vertical room** than the source. 16:9 gives more width relative to height, not more absolute width. Several frames therefore auto-fit (0.93–0.98); frame 5 is 26.04 px. See `CONVERSION_NOTES.md` §1. If the team wants larger type, a taller canvas / smaller source scale is the lever, not a different column width.
 2. **Four games** — Allais, Ellsberg, St. Petersburg, Framing — skinned as Fallout, Cyberpunk 2077, Witcher 3, Skyrim. Numbers stay the slides'.
 3. **Allais first** (Phase 2), **Ellsberg second**.
-4. **Original pixel art**, every sprite replaceable via `config.js`; the manifest is `ASSETS.md`.
-5. **Four "Try it" slides** before frames 8, 10, 17, 19, plus the QR slide **after References** (true last slide) → 35 web slides (36 if References needs 3 pages).
+4. **Original pixel art**, every sprite replaceable via `config.js`; manifest `ASSETS.md`.
+5. **Four "Try it" slides** before frames 8, 10, 17, 19, plus the QR slide **after References** → **35 web slides** (36 if References paginates to 3).
 6. **References split 6 + 6**, author–year.
 7. **No speaker notes** in Phase 1 (source has none).
 8. Git initialised locally, one commit per phase, nothing pushed.
+9. **UI language English**, title string "Paradoxes of Choices under Uncertainty", supervisor "Assoc. Prof. Dmitrij Celov".
+10. **Frame 13 typo fixed** (`\chi` → `\mathcal{X}`), logged in `CONVERSION_NOTES.md`.
+11. **No external requests**: reveal.js/KaTeX/QR/pixel font vendored; `play.html` is a Phase 1 placeholder so the Try-it overlay never shows a 404.
 
 ## Open questions for the team
 
-Full list in `PLAN.md` §7. Blocking before/at Phase 1:
+Full list in `PLAN.md` §7. Still open after Phase 1:
 
-- Aspect ratio 16:9 confirmed? (affects every layout choice)
-- May we fix the `\chi` typo on frame 13?
-- Which title string: "Choices" (`.tex`) or "Choice" (brief)?
-- Correct the supervisor line to "Assoc. Prof. Dmitrij Celov"?
-- All four Try-it slides, or only Allais + Ellsberg live?
-- `siteUrl` / GitHub repo for the QR code (not filled in the brief).
+- **`siteUrl` / GitHub repo** for the QR code: currently `https://example.github.io/paradoxes-of-choices/` (placeholder). The QR encodes it. Tell us the real URL before Phase 4 (or now) and we change one line in `config.js`.
+- **Phone behaviour of the deck:** the fixed 16:9 canvas scales to 0.293 at 375 px (readable on a laptop/projector, small on a phone). The games will be mobile-first. Is that acceptable, or do you want a separate phone layout for the deck?
+- **Title slide footer:** resolved after the layout re-check — the title slide now shows `1 / 35`, like beamer's infolines; only the `[plain]` Thank-you frame is bare. Confirm you are happy with that, or say if you prefer a clean title slide.
+- **Speaker notes:** still empty by design. Do you want 2–4 bullets per slide authored as new content?
+- **References page count:** the source uses `allowframebreaks` and was never compiled. We split 6 + 6; if the PDF paginates to 3 pages, the web count becomes 36. The footer follows the DOM automatically.
+- **Residual accessibility nits:** focus ring on white is 2.08:1 (accepted), and the Try-it dialog does not trap Tab (`inert` not set). Fix now or in Phase 4 QA?
+- **`play.html` placeholder:** currently a “Phase 2 builds the engine” page. Confirm that is fine until the first game lands.
 
 ## Facts that are easy to get wrong (keep)
 
-- The deck has **3 `\pause`** total: two on frame 10 (L276, L283), one on frame 17 (L473). Only the first frame-10 pause is inside the `gameblock`.
-- **0 `\note{}`**, **6 tables**, **3 TikZ**, **1 raster**, **26 display-math constructs**, **12 bib entries**.
-- `VUMIF.sty` **redefines `blue`** as `#02487F`; TikZ `blue` is navy, not pure blue.
-- `\checkmark`, `\boxed`, `align*`, `cases`, `\\[4pt]` are **native** in KaTeX 0.16.11. `\vline`, `tabular`, `\multirow`, `\vspace`, `\hfill` are not.
-- Beamer's `\tableofcontents` lists **all 8** numbered sections, not the ones encountered so far.
-- The `C≻D` / `D≻C` wording across frames 11–12–16 is **consistent** (observed vs EU-implied); do not "fix" it.
-- **Only two of four choice patterns violate EU in each game, and they are mirrors:** Allais A+C and **B+D**; Ellsberg I+IV and **II+III**. Compute from the inequalities, never pattern-match.
-- `2^{20} ≈ 10^6` and prizes `e^{2^k}` on frame 9 are **correct** (with `u=ln`, `ln(e^{2^k}) = 2^k`), not typos.
-- xcolor `gray!70` = 70% grey + 30% **white** = `#A6A6A6`. Pure `#595959` would be a mix with black.
+- **The web deck has 35 slides**, not 29. Order: 1, 2, 3–7, **Try-it StP**, 8, 9, **Try-it Allais**, 10–16, **Try-it Ellsberg**, 17, 18, **Try-it Framing**, 19–28, 29a, 29b, **QR**. Footers run 1–29 and 31–35; only the `[plain]` Thank-you frame (slide 30) has none.
+- **3 `\pause` → 3 fragments:** two on frame 10 (Question 2 inside the gameblock; Typical answers outside) and one on frame 17 (Typical choice). No other frame has a fragment. Both use `fragment--collapse` so hidden content does not reserve space.
+- **0 speaker notes**, **0 `.katex-error`**, **0 console errors**, **0 external requests**, **169 KaTeX nodes**.
+- **The LaTeX source is untouched.** All output is in `docs/`; the conversion log is `CONVERSION_NOTES.md`.
+- **`VUMIF.sty` redefines `blue` as `#02487F`**; the triangle's `gray!70` is **#A6A6A6**; the frame-21 weighting identity line is xcolor `gray` = **#808080**. Do not swap them.
+- **Frame 9 table is `{rr}`** (both columns right-aligned); **frames 17/24/28 are `lccc`/`lcccc`/`lcccccccc`** (first column left, data centred); **frame 28 has no midrule** between p and w(p).
+- **Frame 5 is the only auto-fit below 27 px:** 0.93 × 28 px = **26.04 px**. Frames 3, 6, 9, 10, 17 auto-fit to 0.94–0.98; all other frames are 1.00.
+- **Frame 5 vs frame 6:** `0<α<1` vs `α>0` is a **source inconsistency**; both are preserved. Do not harmonise.
+- **Frame 27** keeps `\sum_{k=1}^{n}1`; it is correct, not a typo.
+- **Frame 15/16 empty block titles** were dropped; `block--untitled` has body only.
+- **Frame 26** is `[plain]`: no `<h2>`, no footer, centred. The **title slide** has a `1 / 35` footer; only frame 26 is bare.
+- **`play.html` is a placeholder**, not the Phase 2 hub. The Try-it overlay is a true viewport dialog moved to `<body>`; the iframe is lazy.
+- **QR** encodes the placeholder `CONFIG.siteUrl`; margin 32 gives a 4-module quiet zone. It decodes in testing.
+- **`docs/vendor/`** is pinned: reveal.js 4.6.1, KaTeX 0.16.11, qrcode-generator 1.4.4, Press Start 2P. No CDN, no `fetch()`, no ES modules.

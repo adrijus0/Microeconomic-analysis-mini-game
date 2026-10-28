@@ -1,0 +1,205 @@
+<section class="tight" data-frame="23" data-section="Explaining the paradoxes">
+  <h2>Map of paradoxes and fixes</h2>
+  <div class="slide-body">
+    <table class="tbl tbl--fixed">
+      <colgroup>
+        <col class="c22">
+        <col class="c27">
+        <col class="c48">
+      </colgroup>
+      <thead>
+        <tr>
+          <th>Paradox</th>
+          <th>What fails</th>
+          <th>Possible explanation</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>St. Petersburg</td>
+          <td>Expected value</td>
+          <td>Concave, bounded utility (Bernoulli)</td>
+        </tr>
+        <tr>
+          <td>Allais / common ratio</td>
+          <td>Independence axiom</td>
+          <td>Probability weighting: prospect theory, rank-dependent utility (Quiggin, 1982)</td>
+        </tr>
+        <tr>
+          <td>Ellsberg</td>
+          <td>Sure-thing principle, a single prior</td>
+          <td>Ambiguity aversion: maxmin EU over a set of priors (Gilboa &amp; Schmeidler, 1989)</td>
+        </tr>
+        <tr>
+          <td>Framing</td>
+          <td>Invariance to description</td>
+          <td>Reference point, gains vs. losses (prospect theory)</td>
+        </tr>
+        <tr>
+          <td>Small-bet risk aversion</td>
+          <td>EU over total wealth</td>
+          <td>Loss aversion $\lambda&gt;1$</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="tight" data-frame="24" data-section="Explaining the paradoxes">
+  <h2>Ambiguity aversion fixes the gem sack</h2>
+  <div class="slide-body">
+    <p><strong>Maxmin expected utility</strong> (Gilboa &amp; Schmeidler, 1989): the player considers a <em>set</em> of possible beliefs and judges each bet by the <em>worst</em> one.</p>
+    <ul>
+      <li>Possible beliefs: $\pi_R=\tfrac13$, $\pi_E\in[0,\tfrac23]$, $\pi_S=\tfrac23-\pi_E$.</li>
+      <li>Worst-case winning chance of each bet:</li>
+    </ul>
+    <div class="center">
+      <table class="tbl tbl--center">
+        <thead>
+          <tr>
+            <th>Bet</th>
+            <th>I</th>
+            <th>II</th>
+            <th>III</th>
+            <th>IV</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Worst-case chance</td>
+            <td>$\tfrac13$</td>
+            <td>$0$</td>
+            <td>$\tfrac13$</td>
+            <td>$\tfrac23$</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="block">
+      <div class="block__title">Result</div>
+      <div class="block__body">I $\succ$ II and IV $\succ$ III — exactly the observed choices.</div>
+    </div>
+  </div>
+</section>
+
+<section class="tight" data-frame="25" data-section="Conclusion">
+  <h2>Conclusion</h2>
+  <div class="slide-body">
+    <ul>
+      <li>EU rests on the <strong>independence axiom</strong>: parallel, linear indifference curves.</li>
+      <li>St. Petersburg: we need <em>utility</em>, not expected <em>value</em>.</li>
+      <li>Allais / common ratio: <strong>certainty</strong> and probabilities are weighted non-linearly.</li>
+      <li>Ellsberg: people dislike <strong>unknown odds</strong>.</li>
+      <li>Framing / loss aversion: choices depend on a <strong>reference point</strong>.</li>
+      <li>Prospect theory, RDU and maxmin EU explain the patterns; EU stays the normative benchmark.</li>
+    </ul>
+    <div class="block block--game">
+      <div class="block__title">In game terms</div>
+      <div class="block__body">Players love sure loot, fear losing their inventory, and avoid chests with unknown odds.</div>
+    </div>
+  </div>
+</section>
+
+<section class="plain" data-frame="26" data-section="Conclusion">
+  <div class="plain__inner">
+    <p class="plain__thanks">Thank you for your attention!</p>
+  </div>
+</section>
+
+<section class="tight" data-frame="27" data-section="Appendix">
+  <h2>Appendix: St. Petersburg computation</h2>
+  <div class="slide-body">
+    <div class="item">
+      <span class="item__bullet" aria-hidden="true">○</span>
+      <div class="item__body">
+        <p>Payoff $2^k$ w.p. $2^{-k}$, $k=1,2,\dots$; utility $u(x)=\ln x$; wealth $w$.</p>
+      </div>
+    </div>
+    <div class="item">
+      <span class="item__bullet" aria-hidden="true">○</span>
+      <div class="item__body">
+        <p>Willingness to pay $p$ is the root of</p>
+        <div class="math">$$f(p)=\sum_{k=1}^{K}2^{-k}\ln\!\big(w+2^k-p\big)-\ln w=0,$$</div>
+        <p>truncated at $K=200$ (the tail is negligible), solved with Brent's method.</p>
+      </div>
+    </div>
+    <div class="item">
+      <span class="item__bullet" aria-hidden="true">○</span>
+      <div class="item__body">
+        <p>Finite bankroll $B=2^{n}$: payoff $\min(2^k,B)$, so</p>
+        <div class="math">$$\mathbb{E}=\sum_{k=1}^{n}1+\sum_{k&gt;n}2^{-k}2^{n}=n+1 .$$</div>
+        <p>With $B=2^{20}$: $\mathbb{E}=21$; with $B=2^{30}\approx10^9$: $\mathbb{E}=31$.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="tight" data-frame="28" data-section="Appendix">
+  <h2>Appendix: prospect theory computations</h2>
+  <div class="slide-body">
+    <div class="math">$$v(x)=x^{0.88},\qquad w(p)=\frac{p^{0.61}}{\big(p^{0.61}+(1-p)^{0.61}\big)^{1/0.61}}$$</div>
+    <div class="center">
+      <table class="tbl tbl--compact tbl--center">
+        <tbody>
+          <tr>
+            <td>$p$</td>
+            <td>0.01</td>
+            <td>0.20</td>
+            <td>0.25</td>
+            <td>0.33</td>
+            <td>0.34</td>
+            <td>0.66</td>
+            <td>0.80</td>
+            <td>0.99</td>
+          </tr>
+          <tr>
+            <td>$w(p)$</td>
+            <td>0.055</td>
+            <td>0.261</td>
+            <td>0.291</td>
+            <td>0.334</td>
+            <td>0.339</td>
+            <td>0.509</td>
+            <td>0.607</td>
+            <td>0.912</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="math">$$
+      \begin{align*}
+      V(B)&amp;=w(.33)\,v(2500)+w(.66)\,v(2400)=806.5 &lt; v(2400)=943.2=V(A),\\
+      V(C)&amp;=w(.33)\,v(2500)=326.7 &gt; w(.34)\,v(2400)=320.1=V(D).
+      \end{align*}
+    $$</div>
+    <p class="note-small">Note: this is the simple (separable) weighting of original prospect theory; cumulative prospect theory weights cumulative probabilities and gives the same ranking here.</p>
+  </div>
+</section>
+
+<section data-frame="29a" data-section="References">
+  <h2>References</h2>
+  <div class="slide-body">
+    <ul class="refs no-bullets">
+      <li>Allais, M. (1953). Le comportement de l’homme rationnel devant le risque: critique des postulats et axiomes de l’école américaine. <em class="ref-title">Econometrica</em>, 21(4), 503–546.</li>
+      <li>Bernoulli, D. (1954). Exposition of a New Theory on the Measurement of Risk. <em class="ref-title">Econometrica</em>, 22(1), 23–36. <span class="ref-note">[Translation of the 1738 original]</span></li>
+      <li>Ellsberg, D. (1961). Risk, Ambiguity, and the Savage Axioms. <em class="ref-title">Quarterly Journal of Economics</em>, 75(4), 643–669.</li>
+      <li>Kahneman, D., &amp; Tversky, A. (1979). Prospect Theory: An Analysis of Decision under Risk. <em class="ref-title">Econometrica</em>, 47(2), 263–291.</li>
+      <li>Tversky, A., &amp; Kahneman, D. (1981). The Framing of Decisions and the Psychology of Choice. <em class="ref-title">Science</em>, 211(4481), 453–458.</li>
+      <li>Quiggin, J. (1982). A Theory of Anticipated Utility. <em class="ref-title">Journal of Economic Behavior &amp; Organization</em>, 3(4), 323–343.</li>
+    </ul>
+  </div>
+</section>
+
+<section data-frame="29b" data-section="References">
+  <h2>References (cont.)</h2>
+  <div class="slide-body">
+    <ul class="refs no-bullets">
+      <li>Machina, M. J. (1987). Choice under Uncertainty: Problems Solved and Unsolved. <em class="ref-title">Journal of Economic Perspectives</em>, 1(1), 121–154.</li>
+      <li>Gilboa, I., &amp; Schmeidler, D. (1989). Maxmin Expected Utility with Non-Unique Prior. <em class="ref-title">Journal of Mathematical Economics</em>, 18(2), 141–153.</li>
+      <li>Tversky, A., &amp; Kahneman, D. (1992). Advances in Prospect Theory: Cumulative Representation of Uncertainty. <em class="ref-title">Journal of Risk and Uncertainty</em>, 5(4), 297–323.</li>
+      <li>Mas-Colell, A., Whinston, M. D., &amp; Green, J. R. (1995). <em class="ref-title">Microeconomic Theory</em>. Oxford University Press.</li>
+      <li>Rabin, M. (2000). Risk Aversion and Expected-Utility Theory: A Calibration Theorem. <em class="ref-title">Econometrica</em>, 68(5), 1281–1292.</li>
+      <li>Celov, D. (2026). <em class="ref-title">Microeconomic Analysis, Lecture 5: Uncertainty</em>. Lecture slides, Vilnius University.</li>
+    </ul>
+  </div>
+</section>

@@ -1,0 +1,147 @@
+<section class="title-slide" data-frame="1" data-section="">
+  <div class="title-slide__inner">
+    <h1>Paradoxes of Choices under Uncertainty</h1>
+    <p class="title-slide__subtitle">Microeconomic analysis</p>
+    <p class="title-slide__authors">Gedas Beržinskas, Adrijus Skuodas, Jokūbas Žitkevičius</p>
+    <p class="title-slide__supervisor">Supervisor: Assoc. Prof. Dmitrij Celov</p>
+    <img class="title-slide__logo" src="assets/ui/mif.png" alt="Vilnius University Faculty of Mathematics and Informatics">
+  </div>
+</section>
+
+<section data-frame="2" data-section="">
+  <h2>Outline</h2>
+  <div class="slide-body">
+    <ol class="toc">
+      <li><span class="toc__num">1</span><span class="toc__label">Expected utility: the benchmark</span></li>
+      <li><span class="toc__num">2</span><span class="toc__label">St. Petersburg paradox</span></li>
+      <li><span class="toc__num">3</span><span class="toc__label">Allais paradox</span></li>
+      <li><span class="toc__num">4</span><span class="toc__label">Ellsberg paradox</span></li>
+      <li><span class="toc__num">5</span><span class="toc__label">Framing and loss aversion</span></li>
+      <li><span class="toc__num">6</span><span class="toc__label">Explaining the paradoxes</span></li>
+      <li><span class="toc__num">7</span><span class="toc__label">Conclusion</span></li>
+      <li><span class="toc__num">8</span><span class="toc__label">Appendix</span></li>
+    </ol>
+  </div>
+</section>
+
+<section data-frame="3" data-section="Expected utility: the benchmark">
+  <h2>Choices under uncertainty</h2>
+  <div class="slide-body">
+    <p>A <strong>lottery</strong> specifies possible outcomes and their probabilities:</p>
+    <div class="math">$$L=\{(x_1,p_1),\ldots,(x_n,p_n)\}, \quad p_i\geq 0,\quad \sum_{i=1}^n p_i=1,\quad x_i\in\mathcal{X}.$$</div>
+    <ul>
+      <li>Outcomes may be monetary prizes; probabilities describe their chances.</li>
+      <li>A decision-maker has preferences over lotteries, written $L\succeq M$ if $L$ is weakly preferred to $M$.</li>
+      <li>The question: can these preferences be represented by a consistent rule?</li>
+    </ul>
+    <div class="block">
+      <div class="block__title">Expected value is not enough</div>
+      <div class="block__body">Two lotteries can have the same expected monetary payoff but be ranked differently because the decision-maker responds to risk.</div>
+    </div>
+  </div>
+</section>
+
+<section class="tight" data-frame="4" data-section="Expected utility: the benchmark">
+  <h2>Example: a lottery in Minecraft</h2>
+  <div class="slide-body">
+    <div class="block block--game">
+      <div class="block__title">Mining a diamond ore with a <em>Fortune III</em> pickaxe</div>
+      <div class="block__body">
+        <p>The game draws the number of diamonds you get:</p>
+        <div class="math">$$L_{\text{mine}}=\Big\{(1,\tfrac25),\ (2,\tfrac15),\ (3,\tfrac15),\ (4,\tfrac15)\Big\}, \qquad \mathbb{E}[L_{\text{mine}}]=\tfrac{2+2+3+4}{5}=2.2 .$$</div>
+        <p>A villager offers instead: <strong>2 diamonds for sure</strong> for the unmined ore.</p>
+      </div>
+    </div>
+    <ul>
+      <li>Risk-neutral player: $2.2&gt;2$ $\Rightarrow$ mine it.</li>
+      <li>A careful hardcore player who needs exactly 2 diamonds may take the sure 2.</li>
+      <li>Both are reasonable: we need a rule that ranks <em>lotteries</em>, not just their averages.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="script" data-frame="5" data-section="Expected utility: the benchmark">
+  <h2>Expected utility</h2>
+  <div class="slide-body">
+    <p>Assign each outcome $x$ a utility $u(x)$, where $u:\mathcal{X}\rightarrow\mathbb{R}$.
+    The expected utility of a lottery is</p>
+    <div class="math">$$EU(L)=\sum_{i=1}^n p_i u(x_i).$$</div>
+    <p>The model predicts that</p>
+    <div class="math">$$L\succeq M \quad\Longleftrightarrow\quad EU(L)\geq EU(M).$$</div>
+    <p>This representation is justified by the
+    <strong>von Neumann–Morgenstern expected utility theorem</strong>.
+    Preferences must be:</p>
+    <ul>
+      <li><strong>complete and transitive</strong>,</li>
+      <li><strong>continuous</strong>, and</li>
+      <li>satisfy <strong>independence</strong>.</li>
+    </ul>
+    <div class="block block--alert">
+      <div class="block__title">Independence: the key axiom</div>
+      <div class="block__body">
+        <p>If $L\succeq M$, then for any lottery $N$ and $0&lt;\alpha&lt;1$,</p>
+        <div class="math">$$\alpha L+(1-\alpha)N \succeq \alpha M+(1-\alpha)N.$$</div>
+        <p>Adding the same lottery component to both options should not reverse their ranking.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="tight" data-frame="6" data-section="Expected utility: the benchmark">
+  <h2>Independence axiom</h2>
+  <div class="slide-body">
+    <p>Suppose $L\succeq M$. Independence requires</p>
+    <div class="math">$$\alpha L+(1-\alpha)N \succeq \alpha M+(1-\alpha)N, \qquad \alpha&gt;0.$$</div>
+    <p>Under expected utility, the difference between the two mixtures is</p>
+    <div class="math">$$\begin{aligned}
+&amp;EU\bigl(\alpha L+(1-\alpha)N\bigr)\\
+&amp;\quad-EU\bigl(\alpha M+(1-\alpha)N\bigr)\\
+&amp;=\alpha EU(L)+(1-\alpha)EU(N)\\
+&amp;\quad-\alpha EU(M)-(1-\alpha)EU(N)\\
+&amp;=\alpha\bigl[EU(L)-EU(M)\bigr].
+\end{aligned}$$</div>
+    <p>Since $\alpha&gt;0$, the sign of the difference is unchanged.</p>
+    <div class="block">
+      <div class="block__title">Prediction</div>
+      <div class="block__body">A common lottery component cannot reverse the ranking between two lotteries.</div>
+    </div>
+  </div>
+</section>
+
+<section class="tight" data-frame="7" data-section="Expected utility: the benchmark">
+  <h2>Independence in plain words: a Skyrim dungeon</h2>
+  <div class="slide-body">
+    <div class="block block--game">
+      <div class="block__title">Two chests behind a door</div>
+      <div class="block__body">W.p. $1-\alpha$ a draugr ambush ends the run (lottery $N$). W.p. $\alpha$ you reach the treasure room and pick chest $L$ (<strong>500 gold for sure</strong>) or chest $M$ (0 or 1200 gold, 50–50).</div>
+    </div>
+    <ul>
+      <li>The ambush does not depend on the chest you pick.</li>
+      <li>If you prefer $L$ in the room, you should prefer “door, then $L$” to “door, then $M$”:<br>$\alpha L+(1-\alpha)N\succeq\alpha M+(1-\alpha)N$.</li>
+    </ul>
+    <div class="block block--alert">
+      <div class="block__title">The paradoxes</div>
+      <div class="block__body">In experiments people <strong>systematically break</strong> this rule.</div>
+    </div>
+  </div>
+</section>
+
+<!-- tryit:stp -->
+<section class="tight" data-frame="8" data-section="St. Petersburg paradox">
+  <h2>St. Petersburg paradox: the villager's coin</h2>
+  <div class="slide-body">
+    <div class="block block--game">
+      <div class="block__title">A villager offers a game</div>
+      <div class="block__body">A coin is flipped until the first tails. If tails first appears on flip $k$, you win $2^k$ emeralds. How many emeralds would you pay to play?</div>
+    </div>
+    <div class="math">$$\Pr(k)=2^{-k},\qquad \mathbb{E}[\text{prize}]=\sum_{k=1}^{\infty}2^{-k}\cdot 2^{k}=1+1+1+\dots=\infty .$$</div>
+    <ul>
+      <li>A risk-neutral player should pay <em>any</em> price.</li>
+      <li>In practice almost nobody pays more than $\approx$ 5–20 emeralds.</li>
+    </ul>
+    <div class="block">
+      <div class="block__title">Paradox</div>
+      <div class="block__body">Expected <em>value</em> gives an absurd answer (Bernoulli, 1738).</div>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,528 @@
+/* ==========================================================================
+   theme.css — palette, type and shared components.
+   Loaded by index.html, deck.html and (Phase 2) play.html.
+   No external fonts: Press Start 2P is vendored under docs/vendor/fonts/.
+   ========================================================================== */
+
+@font-face {
+  font-family: "Press Start 2P";
+  src: url("../vendor/fonts/PressStart2P-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  /* VUMIF.sty / Madrid palette (see PLAN.md §2.2) */
+  --vu-blue: #02487F;          /* VUMIF redefines blue as RGB(2,72,127) */
+  --vu-blue-deep: #01345C;
+  --burgundy: #7B003F;
+  --block-title: #262686;
+  --block-body: #E9E9F3;
+  --alert-title: #143E5F;
+  --alert-body: #E8ECEF;
+  --game: #2E7D32;
+  --game-body: #EEF5EF;
+  --bullet: #3333B3;
+  --grey-70: #A6A6A6;          /* xcolor gray!70 = 70% grey + 30% white */
+  --tikz-red: #FF0000;
+
+  --ink: #1b1b1b;
+  --ink-soft: #3d4650;
+  --muted: #5f6b78;
+  --paper: #ffffff;
+  --wash: #f4f7fa;
+  --rule: #cfd6de;
+  --focus: #f0a500;
+
+  --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  --font-pixel: "Press Start 2P", "Courier New", monospace;
+}
+
+/* --------------------------------------------------------------------------
+   Base
+   -------------------------------------------------------------------------- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--ink);
+  background: #0b1a2a;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+img {
+  max-width: 100%;
+}
+
+a {
+  color: var(--vu-blue);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(2, 72, 127, 0.35);
+}
+
+a:hover,
+a:focus {
+  border-bottom-color: var(--vu-blue);
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* --------------------------------------------------------------------------
+   Reveal.js base overrides
+   -------------------------------------------------------------------------- */
+
+.reveal {
+  font-family: var(--font-body);
+  font-size: 34px;
+  font-weight: 400;
+  color: var(--ink);
+}
+
+.reveal .slides {
+  text-align: left;
+}
+
+.reveal .slides section {
+  background: var(--paper);
+  color: var(--ink);
+  line-height: 1.34;
+}
+
+.reveal h1,
+.reveal h2,
+.reveal h3,
+.reveal h4 {
+  font-family: var(--font-body);
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--vu-blue);
+  font-weight: 700;
+  line-height: 1.16;
+  margin: 0 0 0.35em;
+}
+
+.reveal p {
+  margin: 0 0 0.45em;
+}
+
+.reveal strong,
+.reveal b {
+  font-weight: 700;
+}
+
+.reveal em {
+  font-style: italic;
+}
+
+.reveal small {
+  font-size: 0.8em;
+}
+
+.reveal blockquote {
+  margin: 0.5em 0;
+  padding: 0.2em 0.8em;
+  border-left: 4px solid var(--vu-blue);
+  background: var(--wash);
+  font-style: normal;
+}
+
+/* KaTeX display blocks get a little breathing room, like beamer's \[ \]. */
+.reveal .katex-display {
+  margin: 0.42em 0;
+}
+
+.reveal .katex {
+  font-size: 1.02em;
+}
+
+/* --------------------------------------------------------------------------
+   Beamer-style blocks
+   -------------------------------------------------------------------------- */
+
+.block {
+  margin: 0.55em 0;
+  border-radius: 5px;
+  overflow: hidden;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.08);
+}
+
+.block__title {
+  background: var(--block-title);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.95em;
+  line-height: 1.22;
+  padding: 0.26em 0.72em;
+}
+
+.block__body {
+  background: var(--block-body);
+  padding: 0.48em 0.78em 0.55em;
+}
+
+.block--alert .block__title {
+  background: var(--alert-title);
+}
+
+.block--alert .block__body {
+  background: var(--alert-body);
+}
+
+.block--game .block__title {
+  background: var(--game);
+}
+
+.block--game .block__body {
+  background: var(--game-body);
+}
+
+.block--untitled .block__title {
+  display: none;
+}
+
+/* --------------------------------------------------------------------------
+   Lists — beamer's circle bullets in structure blue
+   -------------------------------------------------------------------------- */
+
+.reveal ul {
+  margin: 0.28em 0;
+  padding-left: 1.12em;
+  list-style-type: circle;
+}
+
+.reveal ul ul {
+  list-style-type: circle;
+}
+
+.reveal ol {
+  margin: 0.28em 0;
+  padding-left: 1.32em;
+}
+
+.reveal li {
+  margin: 0.2em 0;
+  line-height: 1.33;
+}
+
+.reveal li::marker {
+  color: var(--bullet);
+}
+
+.reveal .no-bullets,
+.reveal ul.no-bullets {
+  list-style: none;
+  padding-left: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Booktabs-style HTML tables
+   -------------------------------------------------------------------------- */
+
+.tbl {
+  border-collapse: collapse;
+  border-top: 2px solid #2b2b2b;
+  border-bottom: 2px solid #2b2b2b;
+  margin: 0.35em auto;
+  font-size: 0.9em;
+  font-variant-numeric: tabular-nums;
+}
+
+.tbl th,
+.tbl td {
+  border: 0;
+  padding: 0.2em 0.6em;
+  vertical-align: middle;
+}
+
+.tbl thead th {
+  border-bottom: 1px solid #2b2b2b;
+  font-weight: 700;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.tbl tbody td {
+  text-align: left;
+}
+
+.tbl .num {
+  text-align: right;
+}
+
+/* Source tabular{rr}: both columns right-aligned (frame 9). The compound
+   selector outranks `.tbl tbody td`, which left-aligns data cells. */
+.tbl.tbl--right th,
+.tbl.tbl--right td {
+  text-align: right;
+}
+
+.tbl .mid td {
+  border-bottom: 1px solid #2b2b2b;
+}
+
+.tbl--compact {
+  font-size: 0.82em;
+}
+
+.tbl--compact th,
+.tbl--compact td {
+  padding: 0.16em 0.34em;
+}
+
+/* --------------------------------------------------------------------------
+   Pixel-art buttons (start screen + "Try it" slides)
+   -------------------------------------------------------------------------- */
+
+.pixel-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55em;
+  min-height: 56px;
+  padding: 0.7em 1.15em;
+  border: 3px solid #0a2440;
+  border-radius: 0;
+  background: var(--vu-blue);
+  color: #fff;
+  font-family: var(--font-pixel);
+  font-size: 15px;
+  line-height: 1.45;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  text-decoration: none;
+  box-shadow:
+    0 5px 0 #06192d,
+    0 7px 0 rgba(0, 0, 0, 0.18);
+  transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pixel-btn:hover,
+.pixel-btn:focus {
+  background: #0562a8;
+  border-bottom-color: #06192d;
+  transform: translateY(-1px);
+  box-shadow:
+    0 6px 0 #06192d,
+    0 8px 0 rgba(0, 0, 0, 0.18);
+}
+
+.pixel-btn:active {
+  transform: translateY(4px);
+  box-shadow: 0 1px 0 #06192d;
+}
+
+.pixel-btn--light {
+  background: #fff;
+  color: var(--vu-blue-deep);
+  border-color: var(--vu-blue);
+  box-shadow:
+    0 5px 0 #b9c8d6,
+    0 7px 0 rgba(0, 0, 0, 0.12);
+}
+
+.pixel-btn--light:hover,
+.pixel-btn--light:focus {
+  background: var(--wash);
+}
+
+.pixel-btn--small {
+  min-height: 44px;
+  padding: 0.5em 0.75em;
+  font-size: 12px;
+}
+
+.pixel-btn--close {
+  background: #b3261e;
+  border-color: #5c0f0a;
+  box-shadow: 0 4px 0 #3d0906;
+}
+
+.pixel-btn--close:hover,
+.pixel-btn--close:focus {
+  background: #d33a30;
+}
+
+/* --------------------------------------------------------------------------
+   Start screen (index.html)
+   -------------------------------------------------------------------------- */
+
+.start {
+  min-height: 100vh;
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 20px;
+  background:
+    radial-gradient(circle at 50% 0%, #12466f 0%, #0b2a45 42%, #071726 100%);
+  color: #fff;
+  overflow-x: hidden;
+}
+
+.start__inner {
+  width: min(980px, 100%);
+  text-align: center;
+}
+
+.start__logo-card {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 132px;
+  height: 132px;
+  margin: 0 auto 26px;
+  padding: 10px;
+  background: #fff;
+  border: 3px solid rgba(255, 255, 255, 0.75);
+  box-shadow: 0 6px 0 rgba(0, 0, 0, 0.25);
+}
+
+.start__logo-card img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.start__title {
+  margin: 0 auto 18px;
+  max-width: 900px;
+  font-family: var(--font-pixel);
+  font-size: clamp(20px, 3.1vw, 38px);
+  line-height: 1.55;
+  color: #fff;
+  text-shadow: 4px 4px 0 #06192d, 8px 8px 0 rgba(0, 0, 0, 0.22);
+}
+
+.start__subtitle {
+  margin: 0 0 8px;
+  font-size: clamp(17px, 1.7vw, 22px);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #bcd8ee;
+}
+
+.start__authors {
+  margin: 0 0 2px;
+  font-size: clamp(15px, 1.5vw, 19px);
+  color: #e8f1f8;
+}
+
+.start__supervisor {
+  margin: 0 0 34px;
+  font-size: clamp(13px, 1.3vw, 16px);
+  color: #9fb8cc;
+}
+
+.start__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+}
+
+.start__actions .pixel-btn {
+  min-width: 250px;
+  min-height: 68px;
+  font-size: clamp(13px, 1.25vw, 16px);
+}
+
+.start__hint {
+  margin: 30px 0 0;
+  font-size: 14px;
+  color: #8fa9bf;
+}
+
+.start__hint kbd {
+  display: inline-block;
+  padding: 2px 7px;
+  border: 1px solid #4d6b83;
+  border-bottom-width: 3px;
+  border-radius: 3px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: #dceaf5;
+  background: #102c44;
+}
+
+/* Small phones: keep the two buttons stacked and full width. */
+@media (max-width: 560px) {
+  .start {
+    padding: 22px 16px 30px;
+  }
+
+  .start__logo-card {
+    width: 104px;
+    height: 104px;
+    margin-bottom: 20px;
+  }
+
+  .start__title {
+    font-size: clamp(17px, 5.4vw, 24px);
+    line-height: 1.65;
+    text-shadow: 3px 3px 0 #06192d;
+  }
+
+  .start__actions {
+    gap: 16px;
+  }
+
+  .start__actions .pixel-btn {
+    min-width: 0;
+    width: 100%;
+    max-width: 340px;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Accessibility
+   -------------------------------------------------------------------------- */
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .pixel-btn:hover,
+  .pixel-btn:focus {
+    transform: none;
+  }
+}

@@ -1,0 +1,164 @@
+<section data-frame="16" data-section="Allais paradox" class="tight">
+  <h2>Common ratio effect: a Minecraft expedition</h2>
+  <div class="slide-body">
+    <div class="block block--game">
+      <div class="block__title">Two plans for getting diamonds</div>
+      <div class="block__body">
+        <p>$P_A$: villager trade, <strong>30 diamonds for sure</strong>.<br>
+        $P_B$: deep cave, <strong>40 diamonds</strong> w.p. 0.8 (a creeper w.p. 0.2).</p>
+        <p>Same plans, but you first need to find a stronghold (w.p. $q=0.25$):<br>
+        $P_C$: 30 w.p. 0.25&emsp;&emsp;$P_D$: 40 w.p. $0.25\times0.8=0.20$.</p>
+      </div>
+    </div>
+    <ul>
+      <li>$x_H=40$, $x_M=30$, $x_0=0$, $p=0.8$, $q=0.25$.</li>
+      <li>Typical: $P_A\succ P_B$ (“sure thing!”) but $P_D\succ P_C$ (“20% vs 25%, go for 40”).</li>
+    </ul>
+    <div class="block block--untitled">
+      <div class="block__body">Scaling all winning chances by $q$ should not change the choice — but it does.</div>
+    </div>
+  </div>
+</section>
+
+<!-- tryit:ellsberg -->
+
+<section data-frame="17" data-section="Ellsberg paradox" class="tight">
+  <h2>Ellsberg paradox: the Khajiit’s sack of gems</h2>
+  <div class="slide-body">
+    <div class="block block--game">
+      <div class="block__title">A merchant’s sack holds 90 gems</div>
+      <div class="block__body">
+        <p>30 <strong>rubies</strong>; 60 <strong>emeralds</strong> or <strong>sapphires</strong> in an <em>unknown</em> mix. Draw one blindly; win 100 gold if your bet is right.</p>
+      </div>
+    </div>
+    <div class="center">
+      <table class="tbl tbl--center">
+        <thead>
+          <tr><th>Bet</th><th>Ruby (30)</th><th>Emerald (?)</th><th>Sapphire (?)</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>I</td><td>100</td><td>0</td><td>0</td></tr>
+          <tr class="mid"><td>II</td><td>0</td><td>100</td><td>0</td></tr>
+          <tr><td>III</td><td>100</td><td>0</td><td>100</td></tr>
+          <tr><td>IV</td><td>0</td><td>100</td><td>100</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="block fragment fragment--collapse">
+      <div class="block__title">Typical choice</div>
+      <div class="block__body">I $\succ$ II (“I know it is 1/3”) and IV $\succ$ III (“I know it is 2/3”).</div>
+    </div>
+  </div>
+</section>
+
+<section data-frame="18" data-section="Ellsberg paradox" class="tight">
+  <h2>Why no beliefs can explain it</h2>
+  <div class="slide-body">
+    <p>Let $\pi_R=\tfrac13$, $\pi_E$, $\pi_S$ be the player’s subjective probabilities, $\pi_E+\pi_S=\tfrac23$.</p>
+    <div class="math">$$\begin{align*}
+\text{I}\succ\text{II} &amp;\iff \pi_R\,u(100) &gt; \pi_E\,u(100) \iff \pi_R&gt;\pi_E,\\
+\text{IV}\succ\text{III} &amp;\iff (\pi_E+\pi_S)\,u(100) &gt; (\pi_R+\pi_S)\,u(100) \iff \pi_E&gt;\pi_R .
+\end{align*}$$</div>
+    <ul>
+      <li>Contradiction for <em>every</em> belief and <em>every</em> $u$.</li>
+      <li>“Sapphire” is a common consequence $\Rightarrow$ Savage’s <strong>sure-thing principle</strong> fails.</li>
+    </ul>
+    <div class="block">
+      <div class="block__title">Risk vs. ambiguity</div>
+      <div class="block__body">Allais: known odds, non-linear attitude to <em>risk</em>.<br>
+      Ellsberg: unknown odds, people dislike <strong>ambiguity</strong>.</div>
+    </div>
+  </div>
+</section>
+
+<!-- tryit:framing -->
+
+<section data-frame="19" data-section="Framing and loss aversion" class="tight">
+  <h2>Framing: Whiterun under dragon attack</h2>
+  <div class="slide-body">
+    <div class="block block--game">
+      <div class="block__title">A dragon will kill 600 citizens unless the Jarl acts</div>
+      <div class="block__body">
+        <p><strong>Frame 1 (lives saved):</strong></p>
+        <ul>
+          <li><div class="plan-row"><span>Plan A: 200 people will be saved.</span><span class="pct">[72%]</span></div></li>
+          <li><div class="plan-row"><span>Plan B: 1/3 chance 600 saved, 2/3 chance nobody saved.</span><span class="pct">[28%]</span></div></li>
+        </ul>
+        <p><strong>Frame 2 (deaths):</strong></p>
+        <ul>
+          <li><div class="plan-row"><span>Plan C: 400 people will die.</span><span class="pct">[22%]</span></div></li>
+          <li><div class="plan-row"><span>Plan D: 1/3 chance nobody dies, 2/3 chance 600 die.</span><span class="pct">[78%]</span></div></li>
+        </ul>
+      </div>
+    </div>
+    <div class="block">
+      <div class="block__title">Paradox (Tversky &amp; Kahneman, 1981; Lecture 5)</div>
+      <div class="block__body">A $\equiv$ C and B $\equiv$ D. Only the <em>words</em> changed, yet the majority switches: risk-averse for gains, risk-seeking for losses.</div>
+    </div>
+  </div>
+</section>
+
+<section data-frame="20" data-section="Framing and loss aversion" class="tight">
+  <h2>Loss aversion and small bets: hardcore mode</h2>
+  <div class="slide-body">
+    <div class="block block--game">
+      <div class="block__title">A 50–50 coin bet in a hardcore world</div>
+      <div class="block__body">
+        <p>Lose 1&#8239;000 emeralds or win 1&#8239;050 emeralds. Do you accept?</p>
+      </div>
+    </div>
+    <ul>
+      <li>Most say <strong>no</strong>, although the expected value is $+25$.</li>
+      <li><strong>Rabin (2000):</strong> rejecting it at <em>every</em> wealth level forces EU to reject a 50–50 bet: lose 20&#8239;000 or win <em>any</em> amount. Absurd.</li>
+    </ul>
+    <div class="block">
+      <div class="block__title">Explanation: losses hurt more than gains please</div>
+      <div class="block__body">With $\lambda\approx2.25$: $0.5\cdot1050-0.5\cdot2.25\cdot1000=-600&lt;0$ $\Rightarrow$ reject.<br>
+      Losing your inventory hurts more than finding the same loot.</div>
+    </div>
+  </div>
+</section>
+
+<section data-frame="21" data-section="Explaining the paradoxes" class="tight">
+  <h2>Prospect theory (Kahneman &amp; Tversky)</h2>
+  <div class="slide-body">
+    <div class="math">$$V(L)=\sum_i w(p_i)\,v(x_i),\quad v(x)=\begin{cases}x^{\alpha}, &amp; x\ge0\\ -\lambda(-x)^{\beta}, &amp; x&lt;0\end{cases},\quad w(p)=\frac{p^{\gamma}}{\big(p^{\gamma}+(1-p)^{\gamma}\big)^{1/\gamma}}$$</div>
+    <p class="note-small">$x$ = gain/loss vs. a <strong>reference point</strong>; $\alpha=\beta=0.88$, $\lambda=2.25$, $\gamma=0.61$.</p>
+    <div class="cols cols--50-50">
+      <div class="col">
+        <img class="plot" src="assets/figures/value-function.svg" alt="Value function: concave for gains, convex and steeper for losses">
+        <p class="plot-caption">concave for gains, convex and steeper for losses</p>
+      </div>
+      <div class="col">
+        <img class="plot" src="assets/figures/probability-weighting.svg" alt="Probability weighting: small probabilities overweighted, large probabilities underweighted">
+        <p class="plot-caption">small $p$ overweighted, large $p$ underweighted</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section data-frame="22" data-section="Explaining the paradoxes" class="tight">
+  <h2>Prospect theory reproduces the paradoxes</h2>
+  <div class="slide-body">
+    <table class="tbl">
+      <thead>
+        <tr><th>Example</th><th>Option</th><th class="num">$V$</th><th>Prediction</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Allais (OSRS drop)</td><td>$A$: 2400 sure</td><td class="num">943.2</td><td rowspan="2">$A\succ B$ $\checkmark$</td></tr>
+        <tr><td></td><td>$B$: (2500,.33; 2400,.66)</td><td class="num">806.5</td></tr>
+        <tr><td></td><td>$C$: (2500,.33)</td><td class="num">326.7</td><td rowspan="2">$C\succ D$ $\checkmark$</td></tr>
+        <tr><td></td><td>$D$: (2400,.34)</td><td class="num">320.1</td></tr>
+        <tr class="rule"><td colspan="4"></td></tr>
+        <tr><td>Common ratio (diamonds)</td><td>$P_A$: 30 sure</td><td class="num">19.9</td><td rowspan="2">$P_A\succ P_B$ $\checkmark$</td></tr>
+        <tr><td></td><td>$P_B$: (40,.8)</td><td class="num">15.6</td></tr>
+        <tr><td></td><td>$P_C$: (30,.25)</td><td class="num">5.8</td><td rowspan="2">$P_D\succ P_C$ $\checkmark$</td></tr>
+        <tr><td></td><td>$P_D$: (40,.20)</td><td class="num">6.7</td></tr>
+      </tbody>
+    </table>
+    <ul>
+      <li><strong>Certainty effect:</strong> $w(1)=1$ but $w(.66)+w(.33)=0.84$.</li>
+      <li><strong>Framing:</strong> “saved” = gains $\Rightarrow$ safe plan; “die” = losses $\Rightarrow$ gamble.</li>
+    </ul>
+  </div>
+</section>

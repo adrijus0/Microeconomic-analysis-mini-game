@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Paradoxes of Choices under Uncertainty</title>
+  <meta name="description" content="A team presentation and mini-games about paradoxes of choice under uncertainty.">
+  <link rel="stylesheet" href="css/theme.css">
+</head>
+<body class="start-page">
+  <main class="start">
+    <div class="start__inner">
+      <div class="start__logo-card">
+        <img src="assets/ui/mif.png"
+             alt="Vilnius University Faculty of Mathematics and Informatics"
+             width="244" height="244">
+      </div>
+
+      <h1 class="start__title" id="start-title">Paradoxes of Choices under Uncertainty</h1>
+      <p class="start__subtitle" id="start-subtitle">Microeconomic analysis</p>
+      <p class="start__authors" id="start-authors">Gedas Beržinskas, Adrijus Skuodas, Jokūbas Žitkevičius</p>
+      <p class="start__supervisor" id="start-supervisor">Supervisor: Assoc. Prof. Dmitrij Celov</p>
+
+      <div class="start__actions">
+        <a class="pixel-btn" href="deck.html" aria-label="Open the presentation">▶ Presentation</a>
+        <a class="pixel-btn pixel-btn--light" href="play.html" aria-label="Open the games hub">🎮 Games</a>
+      </div>
+
+      <p class="start__hint">
+        Works offline. In the deck: <kbd>→</kbd> / <kbd>space</kbd> advance,
+        <kbd>S</kbd> speaker view, <kbd>F</kbd> fullscreen.
+      </p>
+    </div>
+  </main>
+
+  <script src="config.js"></script>
+  <script>
+    (function () {
+      "use strict";
+      var c = window.CONFIG;
+      if (!c) return;
+      var set = function (id, value) {
+        var el = document.getElementById(id);
+        if (el && value) el.textContent = value;
+      };
+      set("start-title", c.title);
+      set("start-subtitle", c.subtitle);
+      set("start-authors", (c.authors || []).join(", "));
+      set("start-supervisor", c.supervisor ? "Supervisor: " + c.supervisor : "");
+      if (c.title) document.title = c.title;
+    })();
+  </script>
+</body>
+</html>
