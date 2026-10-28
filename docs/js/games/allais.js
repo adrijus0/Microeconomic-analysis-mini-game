@@ -1,5 +1,5 @@
 /*
- * allais.js — verdict logic for "The Caravan Lockboxes" (Allais paradox).
+ * allais.js — verdict logic for "The Crimson Caravan Contracts" (Allais).
  *
  * Classic script: no ES modules, no fetch, no DOM access at load time, so it
  * can be <script>-tagged from file:// and also require()d by Node for tests.
@@ -16,7 +16,8 @@
  *
  * Public API:
  *   AllaisGame.verdict(choices, game)          -> full verdict object
- *   AllaisGame.checkpoint(round, choice, game) -> one-round theory checkpoint
+ *   AllaisGame.checkpoint(round, choice, game) -> one-round EU requirement
+ *   AllaisGame.reveal(choices, game)           -> short reveal summary
  */
 (function (root, factory) {
   "use strict";
@@ -154,11 +155,11 @@
     return String(Math.round(value * 100) / 100);
   }
 
-  /* Plain prose: 2400 -> "2 400", 0.666 -> "0.67". */
+  /* Plain prose: 2400 -> "2,400", 0.666 -> "0.67". */
   function fmtPlain(value) {
     var n = Math.round(value * 100) / 100;
     var parts = String(Math.abs(n)).split(".");
-    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
     return (n < 0 ? "-" : "") + parts.join(".");
   }
 
@@ -323,114 +324,22 @@
 
   /* ---------------------------------------------------------------- copy */
 
+  /* One short sentence for the reveal screen. The algebra lives behind
+     "Show the math", so none of it appears here. */
   function plainExplanationFor(kind, data) {
+    var you = data.first + " then " + data.second;
     if (kind === "certainty-effect") {
-      return (
-        "You picked " +
-        data.first +
-        " in round 1 and " +
-        data.second +
-        " in round 2. Round 1 offers the certain " +
-        data.certainPayoff +
-        " against " +
-        data.firstOther +
-        " (" +
-        data.firstOtherLottery +
-        "). Round 2 removes the common " +
-        data.commonPayoff +
-        " w.p. " +
-        data.commonProb +
-        " piece from both options and replaces it with " +
-        data.worstPayoff +
-        " w.p. " +
-        data.commonProb +
-        "; expected utility says that cannot flip the ranking, but here it does. This is the certainty effect: the sure payoff feels special, and the common consequence is what people react to."
-      );
+      return you + ", like most people: the sure thing, then the bigger prize.";
     }
-
     if (kind === "mirror") {
-      return (
-        "You picked " +
-        data.first +
-        " and " +
-        data.second +
-        ", both risky contracts. " +
-        data.first +
-        " is the higher-EV option in round 1 (" +
-        data.firstEv +
-        " against " +
-        data.firstOtherEv +
-        " for " +
-        data.firstOther +
-        "), while " +
-        data.second +
-        " is the lower-EV option in round 2 (" +
-        data.secondEv +
-        " against " +
-        data.secondOtherEv +
-        " for " +
-        data.secondOther +
-        "), so this is not simply following expected value. " +
-        "The two choices demand opposite inequalities: " +
-        data.first +
-        " \u227b " +
-        data.firstOther +
-        " needs " +
-        data.firstInequalityPlain +
-        ", and " +
-        data.second +
-        " \u227b " +
-        data.secondOther +
-        " needs the reverse. " +
-        "No single utility function fits both, so the mirror of the sure-thing pattern still violates independence; the axiom is what fails, not your judgement."
-      );
+      return you + ": the gamble first, the safer bet second. No single utility function fits both.";
     }
-
     if (kind === "concave") {
-      return (
-        "You picked " +
-        data.first +
-        " and " +
-        data.second +
-        ". Both choices reduce to the same inequality, " +
-        data.sharedInequalityPlain +
-        ", so one utility function can satisfy them at once. " +
-        "It is the risk-averse shape: the extra 100 on " +
-        data.highPayoff +
-        " does not compensate for the extra risk. " +
-        "Nothing here violates expected utility."
-      );
+      return you + ": careful both times. One risk-averse utility fits. No paradox here.";
     }
-
     if (kind === "near-linear") {
-      return (
-        "You picked " +
-        data.first +
-        " and " +
-        data.second +
-        ", the higher expected value in both rounds: " +
-        data.first +
-        " is worth " +
-        data.firstEv +
-        " against " +
-        data.firstOtherEv +
-        " for " +
-        data.firstOther +
-        ", and " +
-        data.second +
-        " is worth " +
-        data.secondEv +
-        " against " +
-        data.secondOtherEv +
-        " for " +
-        data.secondOther +
-        ". Both choices reduce to the same inequality, " +
-        data.sharedInequalityPlain +
-        ", so a single, nearly linear utility function can produce them. " +
-        "There is no contradiction here."
-      );
+      return you + ": the higher expected value both times. A near-linear utility fits. No paradox here.";
     }
-
     return "";
   }
 
@@ -635,7 +544,47 @@
       plainExplanation: explanation,
       utilityNote: utilityNote,
       benchmarkNote: benchmarkNote,
+      kind: kind,
       ev: ev
+    };
+  }
+
+  /* "a > b > a \qquad \bot" -> an aligned two-line chain. */
+  function stacked(tex) {
+    var parts = tex.replace("\\qquad", "\\quad").split(" > ");
+    if (parts.length !== 3) return tex;
+    return "\\begin{aligned} &" + parts[0] + " > " + parts[1] + "\\\\ &> " + parts[2] + " \\end{aligned}";
+  }
+
+  /*
+   * Engine-facing summary for the short reveal screen. It is built on
+   * verdict(), so the stamp and the algebra still come from the lotteries.
+   * The crowd's pattern is the certainty effect (the sure thing first, the
+   * long shot second).
+   */
+  function reveal(choices, game) {
+    var v = verdict(choices, game);
+    return {
+      you: v.choices.r1 + " \u2192 " + v.choices.r2,
+      crowdMatch: v.kind === "certainty-effect",
+      consistent: v.consistent,
+      stamp: v.consistent
+        ? { text: "EU-consistent", tone: "green" }
+        : { text: "Broke expected utility", tone: "red" },
+      line: v.plainExplanation,
+      math: [
+        { label: v.round1.chosen + " \u227b " + v.round1.other + " needs", tex: v.round1.inequalityTex },
+        { label: v.round2.chosen + " \u227b " + v.round2.other + " needs", tex: v.round2.inequalityTex },
+        {
+          label: v.consistent ? "Same inequality twice: one u(x) fits" : "Together: a contradiction",
+          /* Two lines on the reveal, so the ⊥ stays on a phone screen. */
+          tex: stacked(v.algebraTex)
+        }
+      ],
+      report: {
+        what: "Independence axiom",
+        fix: "Probability weighting"
+      }
     };
   }
 
@@ -691,5 +640,5 @@
     };
   }
 
-  return { verdict: verdict, checkpoint: checkpoint };
+  return { verdict: verdict, checkpoint: checkpoint, reveal: reveal };
 });

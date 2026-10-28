@@ -1,5 +1,5 @@
 /*
- * store.js — tiny progress store for the games hub.
+ * store.js — tiny progress store for the map and the Report Card.
  *
  * localStorage is used only inside try/catch. If it is unavailable (private
  * mode, file:// restrictions, a test that throws), everything falls back to an
@@ -9,7 +9,7 @@
 (function (root) {
   "use strict";
 
-  var KEY = "poc.games.v1";
+  var KEY = "wasteland-odds.v1";
   var memory = {};
   var storage = null;
 

@@ -1,5 +1,5 @@
 /* ==========================================================================
-   theme.css — Pip-Boy green CRT palette, terminal type and the entry screen.
+   theme.css — Pip-Boy green CRT palette, wasteland effects, title screen.
    Loaded by index.html and play.html. No external fonts or requests:
    Press Start 2P is vendored under docs/vendor/fonts/.
    ========================================================================== */
@@ -26,6 +26,14 @@
   --pip-green-glow: rgba(18, 255, 18, 0.2);
   --pip-warn: #FF3B2F;
   --pip-focus: #8CFF8C;
+
+  /* Radiation accents: hazard amber and the Nuka/Sunset cap colours. */
+  --rad-amber: #FFB000;
+  --rad-amber-soft: #FFD27A;
+  --rad-amber-dark: #1A1200;
+  --cap-nuka: #FF4A3D;
+  --cap-sunset: #FFC23D;
+  --cap-star: #4DA3FF;
 
   --font-body: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
     "Liberation Mono", "Courier New", monospace;
@@ -63,7 +71,7 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-/* Static CRT scanlines and vignette. They never take pointer events and the
+/* Static CRT vignette and scanlines. They never take pointer events and the
    scanline band is thin enough that body copy stays readable. */
 body::before {
   content: "";
@@ -71,11 +79,7 @@ body::before {
   inset: 0;
   z-index: 9998;
   pointer-events: none;
-  background: radial-gradient(
-    ellipse at center,
-    transparent 52%,
-    rgba(0, 0, 0, 0.38) 100%
-  );
+  background: radial-gradient(ellipse at center, transparent 52%, rgba(0, 0, 0, 0.38) 100%);
 }
 
 body::after {
@@ -139,8 +143,8 @@ h4 {
   line-height: 1.8;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: var(--pip-green);
-  text-shadow: 0 0 6px rgba(18, 255, 18, 0.35);
+  color: var(--rad-amber);
+  text-shadow: 0 0 6px rgba(255, 176, 0, 0.35);
 }
 
 kbd {
@@ -149,7 +153,6 @@ kbd {
   padding: 1px 5px;
   border: 1px solid var(--pip-green-line);
   border-bottom-width: 2px;
-  border-radius: 0;
   background: rgba(18, 255, 18, 0.08);
   color: var(--pip-green-ink);
   font-family: var(--font-body);
@@ -189,7 +192,193 @@ kbd {
 }
 
 /* --------------------------------------------------------------------------
-   Entry screen — one terminal, one enter action
+   Wasteland effects (driven by js/fx.js)
+   -------------------------------------------------------------------------- */
+
+/* Yellow-black hazard tape. */
+.hazard,
+.terminal__frame::before,
+.games-bar::after {
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--rad-amber) 0 9px,
+    var(--rad-amber-dark) 9px 18px
+  );
+}
+
+/* Typewriter caret. */
+.tw-caret {
+  display: inline-block;
+  width: 0.55em;
+  height: 1.05em;
+  margin-left: 2px;
+  vertical-align: -0.16em;
+  background: var(--pip-green);
+  box-shadow: 0 0 8px rgba(18, 255, 18, 0.6);
+  animation: caret-blink 900ms steps(1, end) infinite;
+}
+
+@keyframes caret-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* A panel that switches on like a tired CRT. */
+.flicker-in {
+  animation: flicker-in 380ms steps(1, end) both;
+}
+
+@keyframes flicker-in {
+  0% { opacity: 0; }
+  18% { opacity: 0.85; }
+  28% { opacity: 0.15; }
+  42% { opacity: 1; }
+  58% { opacity: 0.5; }
+  70% { opacity: 1; }
+}
+
+/* CRT power-on: a bright line that opens into the screen. */
+.crt-on {
+  animation: crt-on 620ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  transform-origin: 50% 50%;
+}
+
+@keyframes crt-on {
+  0% { transform: scale(0.6, 0.004); filter: brightness(5); opacity: 0.7; }
+  40% { transform: scale(1, 0.004); filter: brightness(4); opacity: 1; }
+  100% { transform: none; filter: none; opacity: 1; }
+}
+
+/* Glitch-in for headings: two ghost copies slice across, then vanish. */
+.glitch {
+  position: relative;
+}
+
+.glitch--in {
+  animation: glitch-jolt 900ms steps(2, end) 1 both;
+}
+
+.glitch--in::before,
+.glitch--in::after {
+  content: attr(data-text);
+  content: attr(data-text) / "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.glitch--in::before {
+  color: var(--rad-amber);
+  text-shadow: none;
+  animation: glitch-a 900ms steps(3, end) 1;
+}
+
+.glitch--in::after {
+  color: #E8FFE8;
+  text-shadow: none;
+  animation: glitch-b 900ms steps(3, end) 1;
+}
+
+@keyframes glitch-jolt {
+  0% { transform: translateX(-2px); opacity: 0.4; }
+  20% { transform: translateX(3px) skewX(-6deg); opacity: 1; }
+  40% { transform: translateX(-1px); }
+  60% { transform: translateX(2px) skewX(4deg); }
+  100% { transform: none; }
+}
+
+@keyframes glitch-a {
+  0% { opacity: 1; clip-path: inset(8% 0 62% 0); transform: translate(-5px, 0); }
+  35% { opacity: 1; clip-path: inset(55% 0 12% 0); transform: translate(4px, 0); }
+  70% { opacity: 1; clip-path: inset(30% 0 40% 0); transform: translate(-3px, 0); }
+  100% { opacity: 0; }
+}
+
+@keyframes glitch-b {
+  0% { opacity: 1; clip-path: inset(60% 0 8% 0); transform: translate(5px, 0); }
+  35% { opacity: 1; clip-path: inset(12% 0 58% 0); transform: translate(-4px, 0); }
+  70% { opacity: 1; clip-path: inset(44% 0 30% 0); transform: translate(3px, 0); }
+  100% { opacity: 0; }
+}
+
+/* Rubber stamps for the verdict. */
+.stamp {
+  display: inline-block;
+  margin: 4px 0 16px;
+  padding: 9px 12px 8px;
+  border: 3px double currentColor;
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  line-height: 1.5;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  transform: rotate(-4deg);
+}
+
+.stamp--red {
+  color: var(--pip-warn);
+  background: rgba(255, 59, 47, 0.1);
+  text-shadow: 0 0 8px rgba(255, 59, 47, 0.5);
+}
+
+.stamp--green {
+  color: var(--pip-green);
+  background: rgba(18, 255, 18, 0.08);
+  text-shadow: 0 0 8px rgba(18, 255, 18, 0.5);
+}
+
+.stamp--amber {
+  color: var(--rad-amber);
+  background: rgba(255, 176, 0, 0.1);
+  text-shadow: 0 0 8px rgba(255, 176, 0, 0.5);
+}
+
+.stamp--slam {
+  animation: stamp-slam 520ms cubic-bezier(0.2, 1.6, 0.4, 1) 300ms both;
+}
+
+@keyframes stamp-slam {
+  0% { opacity: 0; transform: rotate(-14deg) scale(2.6); }
+  60% { opacity: 1; transform: rotate(-3deg) scale(0.92); }
+  100% { opacity: 1; transform: rotate(-4deg) scale(1); }
+}
+
+/* Falling radioactive ash: inert, behind the scanlines. */
+.ash {
+  position: fixed;
+  inset: 0;
+  z-index: 9997;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.ash__speck {
+  position: absolute;
+  top: -12px;
+  width: 2px;
+  height: 2px;
+  background: rgba(200, 255, 200, 0.9);
+  box-shadow: 0 0 4px rgba(18, 255, 18, 0.6);
+  animation: ash-fall 12s linear infinite;
+}
+
+.ash__speck--big {
+  width: 3px;
+  height: 3px;
+  background: rgba(255, 210, 122, 0.85);
+  box-shadow: 0 0 5px rgba(255, 176, 0, 0.6);
+}
+
+@keyframes ash-fall {
+  0% { transform: translate3d(0, -5vh, 0); }
+  50% { transform: translate3d(22px, 52vh, 0); }
+  100% { transform: translate3d(-8px, 108vh, 0); }
+}
+
+/* --------------------------------------------------------------------------
+   Title screen
    -------------------------------------------------------------------------- */
 
 .terminal-page {
@@ -197,14 +386,16 @@ kbd {
   align-items: center;
   justify-content: center;
   padding: 28px 14px;
+  padding-bottom: calc(28px + env(safe-area-inset-bottom));
   overflow-x: hidden;
 }
 
 .terminal {
-  width: min(880px, 100%);
+  width: min(720px, 100%);
 }
 
 .terminal__frame {
+  position: relative;
   background:
     linear-gradient(180deg, rgba(18, 255, 18, 0.04), transparent 22%),
     var(--pip-green-panel);
@@ -213,6 +404,12 @@ kbd {
     inset 0 0 48px rgba(18, 255, 18, 0.08),
     0 0 0 1px rgba(18, 255, 18, 0.18),
     0 0 34px rgba(18, 255, 18, 0.15);
+}
+
+.terminal__frame::before {
+  content: "";
+  display: block;
+  height: 8px;
 }
 
 .terminal__bar {
@@ -237,27 +434,42 @@ kbd {
 
 .terminal__bar-status {
   padding: 2px 7px;
-  border: 1px solid var(--pip-green-dim);
-  color: var(--pip-green-soft);
+  border: 1px solid var(--rad-amber);
+  color: var(--rad-amber);
   font-size: 10px;
   letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
 .terminal__screen {
-  padding: 26px 22px 24px;
+  padding: 22px 20px 24px;
 }
 
 .terminal__boot {
-  margin: 0 0 18px;
+  min-height: 3.6em;
+  margin: 0 0 16px;
   color: var(--pip-green-soft);
   font-size: 12px;
+  line-height: 1.5;
   letter-spacing: 0.06em;
 }
 
+.terminal__boot p {
+  margin: 0;
+}
+
+.terminal__motto {
+  margin: 0 0 14px;
+  color: var(--rad-amber);
+  font-size: 14px;
+  font-style: italic;
+  line-height: 1.5;
+}
+
 .terminal__title {
-  margin: 0 0 16px;
-  font-size: clamp(19px, 4.2vw, 34px);
-  line-height: 1.6;
+  margin: 0 0 10px;
+  font-size: clamp(24px, 7vw, 40px);
+  line-height: 1.4;
   color: var(--pip-green);
   text-shadow:
     0 0 8px rgba(18, 255, 18, 0.55),
@@ -265,17 +477,17 @@ kbd {
 }
 
 .terminal__lead {
-  max-width: 62ch;
-  margin: 0 0 22px;
+  max-width: 52ch;
+  margin: 0 0 18px;
   color: var(--pip-green-ink);
-  font-size: clamp(15px, 1.8vw, 17px);
-  line-height: 1.62;
+  font-size: 16px;
+  line-height: 1.6;
 }
 
 .terminal__art {
   max-width: 420px;
-  margin: 0 auto 22px;
-  padding: 8px;
+  margin: 0 auto 20px;
+  padding: 6px;
   background: rgba(2, 8, 2, 0.8);
   border: 1px solid var(--pip-green-line);
   box-shadow: inset 0 0 22px rgba(18, 255, 18, 0.08);
@@ -287,21 +499,28 @@ kbd {
   height: auto;
   border: 1px solid var(--pip-green-dim);
   filter: saturate(0.82) contrast(1.04);
-}
-
-.terminal__art-caption {
-  margin: 8px 0 0;
-  color: var(--pip-green-soft);
-  font-size: 10px;
-  letter-spacing: 0.1em;
-  text-align: center;
+  image-rendering: pixelated;
 }
 
 .terminal__actions {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
-  margin: 0 0 16px;
+  margin: 0;
+}
+
+/* Boot sequence: blocks stay hidden until fx.js switches them on. */
+.is-booting .boot-step {
+  opacity: 0;
+}
+
+.is-booting .boot-step:not(.is-on) {
+  visibility: hidden;
+}
+
+.is-booting .boot-step.is-on {
+  opacity: 1;
+  animation: flicker-in 380ms steps(1, end) both;
 }
 
 .term-btn {
@@ -315,7 +534,7 @@ kbd {
   background: var(--pip-green);
   color: #021002;
   font-family: var(--font-pixel);
-  font-size: clamp(11px, 1.4vw, 14px);
+  font-size: clamp(11px, 3vw, 14px);
   line-height: 1.5;
   text-transform: uppercase;
   letter-spacing: 0.03em;
@@ -326,6 +545,7 @@ kbd {
     0 5px 0 #063006;
   transition: background 120ms ease, transform 120ms ease, box-shadow 120ms ease;
   -webkit-tap-highlight-color: transparent;
+  animation: btn-pulse 2.4s ease-in-out infinite;
 }
 
 .term-btn:hover,
@@ -334,10 +554,6 @@ kbd {
   border-color: var(--pip-green-soft);
   color: #021002;
   transform: translateY(-1px);
-  box-shadow:
-    0 0 0 1px #021002 inset,
-    0 0 30px rgba(18, 255, 18, 0.44),
-    0 6px 0 #063006;
 }
 
 .term-btn:active {
@@ -345,59 +561,41 @@ kbd {
   box-shadow: 0 0 0 1px #021002 inset, 0 2px 0 #063006;
 }
 
-.terminal__hint {
-  margin: 0 0 12px;
-  color: var(--pip-green-soft);
-  font-size: 13px;
-  line-height: 1.5;
-}
-
-.terminal__status {
-  margin: 0;
-  padding-top: 12px;
-  border-top: 1px dashed var(--pip-green-dim);
-  color: var(--pip-green-soft);
-  font-size: 10px;
-  line-height: 1.6;
-  letter-spacing: 0.08em;
+@keyframes btn-pulse {
+  50% {
+    box-shadow:
+      0 0 0 1px #021002 inset,
+      0 0 34px rgba(18, 255, 18, 0.55),
+      0 5px 0 #063006;
+  }
 }
 
 .terminal__foot {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 8px;
   padding: 10px 14px;
   border-top: 1px solid var(--pip-green-line);
   color: var(--pip-green-soft);
   font-size: 10px;
   line-height: 1.5;
   letter-spacing: 0.06em;
+  text-align: center;
 }
 
 /* --------------------------------------------------------------------------
-   Accessibility and print
+   Small screens, reduced motion, print
    -------------------------------------------------------------------------- */
 
 @media (max-width: 560px) {
   .terminal-page {
-    padding: 12px 8px 22px;
+    align-items: flex-start;
+    padding: 12px 10px 22px;
   }
 
   .terminal__screen {
-    padding: 20px 14px 20px;
-  }
-
-  .terminal__title {
-    font-size: clamp(17px, 5.6vw, 24px);
+    padding: 18px 14px 20px;
   }
 
   .term-btn {
     width: 100%;
-  }
-
-  .terminal__foot {
-    flex-direction: column;
   }
 }
 
@@ -411,6 +609,13 @@ kbd {
     scroll-behavior: auto !important;
   }
 
+  .ash,
+  .tw-caret,
+  .glitch--in::before,
+  .glitch--in::after {
+    display: none !important;
+  }
+
   .term-btn:hover,
   .term-btn:focus {
     transform: none;
@@ -419,7 +624,8 @@ kbd {
 
 @media print {
   body::before,
-  body::after {
+  body::after,
+  .ash {
     display: none !important;
   }
 

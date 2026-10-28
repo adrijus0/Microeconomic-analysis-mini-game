@@ -1,12 +1,12 @@
 /*
- * play.js — hash router for the single-game site.
+ * play.js — hash router.
  *
- *   play.html            → The Caravan Lockboxes
- *   play.html#allais     → The Caravan Lockboxes (same game)
- *   play.html#report     → Paradox Report Card
+ *   play.html  /  play.html#map   → Pip-Boy map
+ *   play.html#<encounter id>      → that encounter (e.g. #allais)
+ *   play.html#report              → Vault-Tec Report Card
  *
- * Phase 3 removed the four-game hub, the coming-soon routes and the deck
- * overlay. Unknown hashes fall back to the game rather than a dead end.
+ * Unknown hashes fall back to the map rather than a dead end, so a presenter
+ * can deep-link the room straight into one encounter.
  */
 (function (root) {
   "use strict";
@@ -17,77 +17,94 @@
     return document.getElementById(id);
   }
 
-  function views() {
-    return {
-      game: byId("view-game"),
-      report: byId("view-report")
-    };
-  }
-
+  /* Inactive views are emptied, so no stale buttons linger in the DOM. */
   function show(name) {
-    var all = views();
-    Object.keys(all).forEach(function (key) {
-      var node = all[key];
+    ["map", "game", "report"].forEach(function (key) {
+      var node = byId("view-" + key);
       if (!node) return;
-      var active = key === name;
-      node.hidden = !active;
-      node.classList.toggle("is-active", active);
+      node.hidden = key !== name;
+      if (key !== name) {
+        while (node.firstChild) node.removeChild(node.firstChild);
+      }
     });
   }
 
   function idFromHash() {
-    return String(root.location.hash || "")
-      .replace(/^#\/?/, "")
-      .toLowerCase();
+    return String(root.location.hash || "").replace(/^#\/?/, "").toLowerCase();
   }
 
   function setTitle(text) {
-    document.title = text
-      ? text + " — Paradoxes of Choices under Uncertainty"
-      : "Paradoxes of Choices under Uncertainty";
+    var base = CONFIG.title || "Wasteland Odds";
+    document.title = text ? text + " — " + base : base;
   }
 
-  function route() {
-    /* Capture the running stage before stopping the engine: a Report opened
-       from the reveal may show the saved card; a Report opened mid-run must
-       not leak the previous run's result (or the paradox name). */
-    var active =
-      root.Engine && root.Engine.current ? root.Engine.current : null;
-    var allowSavedReport = !active || active.stage === "reveal";
+  /* The top-left link leaves the game for the map, or the map for the title. */
+  function setBack(onMap) {
+    var link = byId("back-link");
+    if (!link) return;
+    link.href = onMap ? "index.html" : "#map";
+    link.textContent = onMap ? "◂ Title" : "◂ Map";
+  }
 
-    if (root.Engine && typeof root.Engine.stop === "function") root.Engine.stop();
+  /* In-page anchors (the skip link's #main) are not routes. */
+  var ANCHORS = { main: true };
 
+  function route(event) {
     var id = idFromHash();
+    if (event && ANCHORS[id]) return;
+    if (root.Engine) root.Engine.stop();
+    if (root.FX) root.FX.guard(350);
+    var games = CONFIG.games || {};
+    var listed = (CONFIG.encounterOrder || []).indexOf(id) !== -1;
 
     if (id === "report") {
       show("report");
-      root.Hub.renderReport(byId("view-report"), {
-        allowSaved: allowSavedReport
-      });
-      setTitle("Paradox Report Card");
-      window.scrollTo(0, 0);
-      return;
-    }
-
-    var game = (CONFIG.games || {}).allais;
-    if (!game) {
-      show("report");
+      setBack(false);
       root.Hub.renderReport(byId("view-report"));
-      setTitle("Paradox Report Card");
-      window.scrollTo(0, 0);
-      return;
+      setTitle("Report Card");
+    } else if (listed && games[id]) {
+      show("game");
+      setBack(false);
+      root.Engine.mount(byId("view-game"), games[id]);
+      setTitle(games[id].title);
+    } else {
+      if (ANCHORS[id] && root.history && root.history.replaceState) {
+        root.history.replaceState(null, "", root.location.pathname + root.location.search);
+      }
+      show("map");
+      setBack(true);
+      root.Hub.renderMap(byId("view-map"));
+      setTitle("Map");
     }
+    root.scrollTo(0, 0);
+  }
 
-    show("game");
-    setTitle(game.title);
-    root.Engine.mount(byId("view-game"), game);
-    window.scrollTo(0, 0);
+  /* The skip link focuses <main> without changing the hash, so it never
+     ends a game or adds a history entry. */
+  function wireSkipLink() {
+    var link = document.querySelector(".skip-link");
+    var main = byId("main");
+    if (!link || !main) return;
+    link.addEventListener("click", function (event) {
+      event.preventDefault();
+      try {
+        main.focus({ preventScroll: false });
+      } catch (err) {
+        main.focus();
+      }
+    });
+  }
+
+  function boot() {
+    if (root.FX) root.FX.ash();
+    wireSkipLink();
+    route();
   }
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", route);
+    document.addEventListener("DOMContentLoaded", boot);
   } else {
-    route();
+    boot();
   }
   root.addEventListener("hashchange", route);
 })(typeof window !== "undefined" ? window : globalThis);

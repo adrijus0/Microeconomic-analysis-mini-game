@@ -2,83 +2,132 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="dark">
-  <title>The Caravan Lockboxes — Paradoxes of Choices under Uncertainty</title>
-  <meta name="description" content="A green CRT decision game about choice under uncertainty: two contracts, two seeded draws, and the expected-utility algebra behind your choices.">
+  <meta name="theme-color" content="#020802">
+  <title>Wasteland Odds — Paradoxes of Choices under Uncertainty</title>
+  <meta name="description" content="Three Fallout: New Vegas deals that break the textbook theory of choice: St. Petersburg, Allais and Ellsberg.">
   <link rel="stylesheet" href="css/theme.css">
 </head>
 <body class="terminal-page">
-  <a class="skip-link" href="#terminal-main">Skip to the terminal</a>
-
   <main id="terminal-main" class="terminal">
-    <section class="terminal__frame" aria-labelledby="terminal-title">
+    <section class="terminal__frame" id="terminal-frame" aria-labelledby="terminal-title">
       <header class="terminal__bar">
-        <span class="terminal__bar-label" id="terminal-kicker">Caravan termlink // online</span>
-        <span class="terminal__bar-status">LOCAL</span>
+        <span class="terminal__bar-label">RobCo termlink</span>
+        <span class="terminal__bar-status">☢ Online</span>
       </header>
 
       <div class="terminal__screen">
-        <p class="terminal__boot">&gt; BOOT SEQUENCE ... OK</p>
-
-        <p class="eyebrow" id="terminal-subtitle">Paradoxes of Choices under Uncertainty</p>
-        <h1 class="terminal__title" id="terminal-title">The Caravan Lockboxes</h1>
-        <p class="terminal__lead" id="terminal-lead">
-          A caravan halt. Two sealed contracts. Choose first — the full pattern
-          is revealed only after both are locked.
-        </p>
-
-        <figure class="terminal__art">
-          <img id="terminal-art"
-               src="assets/cards/hub_allais.png"
-               alt="A steel strongbox on a desert road, with a watchtower behind"
-               width="640" height="360">
-          <figcaption class="terminal__art-caption">CARAVAN HALT // DUSK // ROUTE UNVERIFIED</figcaption>
-        </figure>
-
-        <div class="terminal__actions">
-          <a class="term-btn" id="terminal-cta" href="play.html">▶ Enter the game</a>
+        <div class="terminal__boot" id="terminal-boot" aria-hidden="true">
+          <p>ROBCO INDUSTRIES (TM) TERMLINK PROTOCOL</p>
+          <p>VAULT-TEC EXPERIMENT LOG v2.077</p>
+          <p>LOADING PARADOXES ... OK</p>
         </div>
 
-        <p class="terminal__hint" id="terminal-hint">Two contracts · two seeded draws · offline</p>
-        <p class="terminal__status" id="terminal-status">ONE GAME · TWO CONTRACTS · NO SECOND CHANCES</p>
+        <p class="terminal__motto boot-step" id="terminal-motto">War never changes. Neither do your biases.</p>
+        <h1 class="terminal__title boot-step" id="terminal-title">Wasteland Odds</h1>
+        <p class="eyebrow boot-step" id="terminal-subtitle">Paradoxes of Choices under Uncertainty</p>
+        <p class="terminal__lead boot-step" id="terminal-lead">
+          Three deals in the Mojave. Trust your gut — then see the theory your gut just broke.
+        </p>
+
+        <figure class="terminal__art boot-step">
+          <img id="terminal-art"
+               src="assets/cards/hub_allais.png"
+               alt="A steel strongbox on a Mojave highway, with a watchtower behind"
+               width="640" height="360">
+        </figure>
+
+        <div class="terminal__actions boot-step">
+          <a class="term-btn" id="terminal-cta" href="play.html">▶ Enter the Mojave</a>
+        </div>
       </div>
 
       <footer class="terminal__foot">
-        <span>REPORT CARD AVAILABLE AFTER BOTH CONTRACTS</span>
-        <span>NOTHING IS UPLOADED</span>
+        <span id="terminal-disclaimer">Fan-made class project · not affiliated with Bethesda</span>
       </footer>
     </section>
   </main>
 
   <script src="config.js"></script>
+  <script src="js/fx.js"></script>
   <script>
     (function () {
       "use strict";
-      var c = window.CONFIG;
-      if (!c) return;
+      var c = window.CONFIG || {};
       var landing = c.landing || {};
-      var set = function (id, value) {
-        var el = document.getElementById(id);
-        if (el && value) el.textContent = value;
-      };
-      set("terminal-kicker", landing.kicker);
+      function $(id) { return document.getElementById(id); }
+      function set(id, value) {
+        var node = $(id);
+        if (node && value) node.textContent = value;
+      }
+      set("terminal-motto", landing.motto);
       set("terminal-title", landing.title);
-      set("terminal-subtitle", landing.subtitle || c.title);
+      set("terminal-subtitle", landing.subtitle);
       set("terminal-lead", landing.lead);
-      set("terminal-cta", landing.cta);
-      set("terminal-hint", landing.hint);
-      set("terminal-status", landing.status);
-      if (landing.title) document.title = landing.title + " — " + (c.title || "Paradoxes of Choices under Uncertainty");
+      set("terminal-cta", landing.cta ? "▶ " + landing.cta : "");
+      set("terminal-disclaimer", landing.disclaimer);
+      if (landing.title) document.title = landing.title + " — " + (landing.subtitle || c.subtitle || "");
 
-      var art = document.getElementById("terminal-art");
+      var art = $("terminal-art");
       var entry = c.assets && c.assets.hub_allais;
       if (art && entry) {
-        if (entry.file) art.src = entry.file;
-        if (entry.alt) art.alt = entry.alt;
-        if (entry.w) art.width = entry.w;
-        if (entry.h) art.height = entry.h;
+        art.src = entry.file;
+        art.alt = entry.alt || "";
       }
+
+      var FX = window.FX;
+      if (!FX) return;
+      FX.ash();
+
+      var frame = $("terminal-frame");
+      var bootHost = $("terminal-boot");
+      var steps = Array.prototype.slice.call(document.querySelectorAll(".boot-step"));
+      var timers = [];
+      var finished = false;
+
+      function finish() {
+        if (finished) return;
+        finished = true;
+        timers.forEach(function (t) {
+          if (t && t.cancel) t.cancel(); else clearTimeout(t);
+        });
+        if (typing) typing.finish();
+        frame.classList.remove("is-booting");
+        steps.forEach(function (node) { node.classList.add("is-on"); });
+        FX.glitch($("terminal-title"));
+      }
+
+      if (FX.instant()) {
+        FX.glitch($("terminal-title"));
+        return;
+      }
+
+      /* CRT power-on, typed boot lines, then each block flickers in. */
+      frame.classList.add("is-booting", "crt-on");
+      var lines = (landing.boot || []).slice();
+      while (bootHost.firstChild) bootHost.removeChild(bootHost.firstChild);
+      var typing = FX.typeLines(bootHost, lines, {
+        timers: timers,
+        speed: 12,
+        delay: 380,
+        onDone: function () {
+          steps.forEach(function (node, i) {
+            FX.later(timers, function () {
+              node.classList.add("is-on");
+              if (node.id === "terminal-title") FX.glitch(node);
+              if (i === steps.length - 1) finish();
+            }, 160 + i * 190);
+          });
+        }
+      });
+      /* Impatient wastelanders can tap to skip the boot. */
+      frame.addEventListener("click", function (event) {
+        if (finished) return;
+        /* A tap during the boot only skips it, even on the button's spot. */
+        event.preventDefault();
+        finish();
+      });
     })();
   </script>
 </body>

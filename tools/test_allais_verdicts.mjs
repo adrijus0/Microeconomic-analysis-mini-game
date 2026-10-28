@@ -23,9 +23,9 @@ const gamePath = resolve(root, "docs/js/games/allais.js");
 /* Fallback only: exactly the entry proposed for docs/config.js. */
 const FIXTURE = {
   id: "allais",
-  title: "The Caravan Lockboxes",
+  title: "The Crimson Caravan Contracts",
   paradox: "Allais paradox",
-  slideRefs: [10, 11, 12, 13, 14, 15, 16, 22],
+  slideRefs: [7, 8, 10, 14],
   rounds: [
     {
       id: "r1",
@@ -359,23 +359,35 @@ PATTERNS.forEach((row) => {
 });
 
 expectTrue(
-  "A+C plainExplanation names the certainty effect",
-  results["A + C"].plainExplanation.includes("certainty effect"),
+  "A+C plainExplanation says it matches most people",
+  results["A + C"].plainExplanation.includes("like most people"),
   "  plainExplanation: " + JSON.stringify(results["A + C"].plainExplanation)
 );
+/* The reveal line is one short sentence: the algebra stays behind
+   "Show the math", so no inequality appears in it. */
+PATTERNS.forEach((row) => {
+  const text = results[row.pattern].plainExplanation;
+  expectTrue(
+    row.pattern + " plainExplanation has no inequality",
+    !text.includes("u(") && !text.includes(">"),
+    "  plainExplanation: " + JSON.stringify(text)
+  );
+  expectTrue(
+    row.pattern + " plainExplanation is short (≤ 22 words)",
+    text.split(/\s+/).length <= 22,
+    "  plainExplanation: " + JSON.stringify(text)
+  );
+});
+["A + D", "B + C"].forEach((pattern) => {
+  expectTrue(
+    pattern + " plainExplanation says there is no paradox",
+    results[pattern].plainExplanation.includes("No paradox here"),
+    "  plainExplanation: " + JSON.stringify(results[pattern].plainExplanation)
+  );
+});
 expectTrue(
-  "A+D plainExplanation uses Unicode math, not TeX",
-  results["A + D"].plainExplanation.includes("0.34\u00b7u(2400) > 0.33\u00b7u(2500)"),
-  "  plainExplanation: " + JSON.stringify(results["A + D"].plainExplanation)
-);
-expectTrue(
-  "B+C plainExplanation uses Unicode math, not TeX",
-  results["B + C"].plainExplanation.includes("0.33\u00b7u(2500) > 0.34\u00b7u(2400)"),
-  "  plainExplanation: " + JSON.stringify(results["B + C"].plainExplanation)
-);
-expectTrue(
-  "B+D plainExplanation uses Unicode math, not TeX",
-  results["B + D"].plainExplanation.includes("0.33\u00b7u(2500) > 0.34\u00b7u(2400)"),
+  "B+D plainExplanation says no single utility function fits",
+  results["B + D"].plainExplanation.includes("No single utility function fits both"),
   "  plainExplanation: " + JSON.stringify(results["B + D"].plainExplanation)
 );
 

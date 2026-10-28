@@ -1,22 +1,27 @@
 /*
- * engine.js — the reusable, data-driven game stage machine.
+ * engine.js — the data-driven encounter runner.
  *
- * One game = one entry in CONFIG.games. The engine renders:
- *   scene → choice → lock → resolve → theory checkpoint → [interlude] → reveal
- * and leaves all game-specific verdict logic to the module named in
- * game.logic (window.AllaisGame).
+ * One encounter = one entry in CONFIG.games. The engine renders
+ *   scene → (choice → resolve → [beat]) × rounds → reveal
+ * and leaves the paradox-specific maths to the module named in game.logic
+ * (window.AllaisGame, …). A module may provide:
+ *   init(rng, game)                    -> per-run context (e.g. a hidden mix)
+ *   resolve(round, option, ctx, rng)   -> { payoff, … } for the outcome draw
+ *   resolveAll(rounds, choices, ctx, rng) -> one draw that settles every
+ *                                         round (games with resolveAtEnd)
+ *   reveal(choices, game, ctx)         -> the short reveal summary
+ * Without resolve(), the option's lottery is sampled with the seeded RNG.
+ * A game with `resolveAtEnd: true` shows no outcome until the last round,
+ * so an early draw can never leak information into a later choice.
  *
- * Phase 3 removed the ×1,000 simulation stage. After each seeded draw the
- * player sees the expected-utility requirement their choice imposes, rendered
- * with KaTeX, and no statistics.
- *
- * Works from file:// and under a GitHub Pages sub-path. Classic script, no
- * modules, no fetch.
+ * Outcome animations are "props" (chest, …) registered in PROPS below.
+ * Works from file:// and under a GitHub Pages sub-path. Classic script.
  */
 (function (root) {
   "use strict";
 
   var CONFIG = root.CONFIG || {};
+  var FX = root.FX;
   var current = null;
 
   /* ------------------------------------------------------------------ */
@@ -36,7 +41,8 @@
 
   function intText(value) {
     var n = Math.round(Number(value) || 0);
-    return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    var sign = n < 0 ? "−" : "";
+    return sign + String(Math.abs(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   }
 
   function caps(value) {
@@ -46,22 +52,6 @@
   function pct(p) {
     var value = Math.round((Number(p) || 0) * 1000) / 10;
     return String(value).replace(/\.0$/, "") + "%";
-  }
-
-  function prefersReduced() {
-    try {
-      return !!(root.matchMedia && root.matchMedia("(prefers-reduced-motion: reduce)").matches);
-    } catch (err) {
-      return false;
-    }
-  }
-
-  function isFast() {
-    try {
-      return new URLSearchParams(root.location.search || "").get("fast") === "1";
-    } catch (err) {
-      return false;
-    }
   }
 
   function setStatus(state, message) {
@@ -84,15 +74,12 @@
     }
   }
 
-  /* A new stage starts at the top of the game, otherwise a Continue clicked at
-     the bottom of a long phone screen leaves the next heading off-screen. */
-  function resetScroll(state) {
+  /* A new stage starts at the top, otherwise a button tapped at the bottom of
+     a long phone screen leaves the next heading off-screen. */
+  function resetScroll() {
     try {
       if (root.scrollY > 0) {
-        root.scrollTo({
-          top: 0,
-          behavior: prefersReduced() ? "auto" : "smooth"
-        });
+        root.scrollTo({ top: 0, behavior: FX.reduced() ? "auto" : "smooth" });
       }
     } catch (err) {
       try {
@@ -103,8 +90,38 @@
     }
   }
 
+  function logicFor(game) {
+    var logic = game && game.logic ? root[game.logic] : null;
+    return logic || null;
+  }
+
+  function roundRng(state, round, salt) {
+    return root.RNG.create(
+      state.seed + "|" + state.game.id + "|" + (round ? round.id : "run") + "|" + salt
+    );
+  }
+
+  /* A panel that flickers on like an old CRT. */
+  function panel(state, kind) {
+    var node = el("section", "stage stage--" + kind);
+    if (!FX.instant()) node.classList.add("flicker-in");
+    return node;
+  }
+
+  /* Sticky bottom bar: the main action sits in the thumb zone on phones. */
+  function actionbar() {
+    return el("div", "actionbar");
+  }
+
+  function button(label, className, onClick) {
+    var b = el("button", "btn " + (className || "btn--primary"), label);
+    b.type = "button";
+    if (onClick) b.addEventListener("click", onClick);
+    return b;
+  }
+
   /* ------------------------------------------------------------------ */
-  /* Maths                                                              */
+  /* Maths (KaTeX, rendered lazily)                                     */
   /* ------------------------------------------------------------------ */
 
   function math(host, tex, display) {
@@ -127,80 +144,171 @@
     host.textContent = tex;
   }
 
+  /*
+   * KaTeX (about 80 KB plus fonts) is fetched only when a "Show the math"
+   * box is first opened, so slow lecture-hall Wi-Fi never waits for it.
+   * If it fails to load, formulas fall back to their raw TeX text.
+   */
+  var katexWaiters = null;
+
+  function loadKatex(done) {
+    if (root.katex) {
+      done();
+      return;
+    }
+    if (katexWaiters) {
+      katexWaiters.push(done);
+      return;
+    }
+    katexWaiters = [done];
+    var base = "vendor/katex/dist/";
+    var css = document.createElement("link");
+    css.rel = "stylesheet";
+    css.href = base + "katex.min.css";
+    document.head.appendChild(css);
+    var script = document.createElement("script");
+    script.src = base + "katex.min.js";
+    function flush() {
+      var waiting = katexWaiters || [];
+      katexWaiters = null;
+      waiting.forEach(function (fn) {
+        fn();
+      });
+    }
+    script.onload = flush;
+    script.onerror = flush;
+    document.head.appendChild(script);
+  }
+
+  /* Formulas inside a closed <details> are typeset on first open only. */
+  function lazyMath(details) {
+    var done = false;
+    function render() {
+      if (done || !details.open) return;
+      done = true;
+      loadKatex(function () {
+        Array.prototype.forEach.call(details.querySelectorAll("[data-tex]"), function (node) {
+          math(node, node.getAttribute("data-tex"), true);
+        });
+      });
+    }
+    details.addEventListener("toggle", render);
+  }
+
   /* ------------------------------------------------------------------ */
   /* Lottery presentation                                               */
   /* ------------------------------------------------------------------ */
 
-  function outcomeClass(value) {
-    if (Number(value) === 0) return "lot-seg--zero";
-    if (Number(value) === 2400) return "lot-seg--mid";
-    if (Number(value) === 2500) return "lot-seg--high";
-    return "lot-seg--other";
+  /*
+   * Bar segments for an option. Cap lotteries ({p, x}) are coloured by payoff;
+   * display segments ({n, of, kind}) cover bets whose odds are partly unknown.
+   */
+  function segmentsOf(state, option) {
+    if (option.segments) {
+      return option.segments.map(function (seg) {
+        var p = Number(seg.n) / Number(seg.of || 90);
+        var of = seg.of || 90;
+        var unknown = seg.kind === "unknown";
+        return {
+          p: p,
+          cls: "lot-seg--" + (seg.kind || "lose"),
+          barText: unknown ? "?" : seg.n + "/" + of,
+          /* Unknown odds read as a range, never as a known share. */
+          row: [(seg.range || (unknown ? "0–" + seg.n : seg.n)) + "/" + of, seg.text || ""]
+        };
+      });
+    }
+    return (option.lottery || []).map(function (part) {
+      var x = Number(part.x);
+      var cls = x === 0
+        ? "lot-seg--zero"
+        : x === state.maxPayoff
+        ? "lot-seg--high"
+        : "lot-seg--mid";
+      return {
+        p: Number(part.p),
+        cls: cls,
+        barText: pct(part.p),
+        row: [pct(part.p), caps(x)]
+      };
+    });
   }
 
-  function lotteryBar(option) {
+  function lotteryBar(state, option) {
     var bar = el("span", "lot-bar");
     bar.setAttribute("aria-hidden", "true");
-    (option.lottery || []).forEach(function (part) {
-      var seg = el(
-        "span",
-        "lot-bar__seg " + outcomeClass(part.x) + (part.p < 0.06 ? " is-thin" : "")
-      );
-      seg.style.width = Number(part.p) * 100 + "%";
-      if (part.p >= 0.18) {
-        seg.appendChild(el("span", "lot-bar__p", pct(part.p)));
-      }
-      bar.appendChild(seg);
+    segmentsOf(state, option).forEach(function (seg) {
+      if (!(seg.p > 0)) return;
+      var node = el("span", "lot-bar__seg " + seg.cls + (seg.p < 0.06 ? " is-thin" : ""));
+      node.style.width = seg.p * 100 + "%";
+      if (seg.p >= 0.18) node.appendChild(el("span", "lot-bar__p", seg.barText));
+      bar.appendChild(node);
     });
     return bar;
   }
 
-  function lotteryList(option) {
+  function lotteryList(state, option) {
     var list = el("span", "lot-list");
-    (option.lottery || []).forEach(function (part) {
+    segmentsOf(state, option).forEach(function (seg) {
       var row = el("span", "lot-list__row");
-      row.appendChild(el("span", "lot-list__p", pct(part.p)));
+      row.appendChild(el("span", "lot-list__p", seg.row[0]));
       row.appendChild(el("span", "lot-list__arrow", "→"));
-      row.appendChild(el("span", "lot-list__x", caps(part.x)));
+      row.appendChild(el("span", "lot-list__x", seg.row[1]));
       list.appendChild(row);
     });
     return list;
   }
 
   function optionCard(state, option) {
-    var button = el("button", "option");
-    button.type = "button";
-    button.setAttribute("data-option", option.id);
-    button.setAttribute("aria-pressed", "false");
+    var card = el("button", "option");
+    card.type = "button";
+    card.setAttribute("data-option", option.id);
+    card.setAttribute("aria-pressed", "false");
 
     var head = el("span", "option__head");
-    var spriteWrap = el("span", "option__sprite");
-    spriteWrap.appendChild(
-      root.GameAssets.img(option.sprite, {
-        className: "sprite sprite--option",
-        alt: ""
-      })
-    );
+    if (option.sprite) {
+      var spriteWrap = el("span", "option__sprite");
+      spriteWrap.appendChild(
+        root.GameAssets.img(option.sprite, { className: "sprite sprite--option", alt: "" })
+      );
+      head.appendChild(spriteWrap);
+    }
     var titles = el("span", "option__titles");
     titles.appendChild(el("span", "option__id", option.id));
     titles.appendChild(el("span", "option__name", option.label));
     if (option.note) titles.appendChild(el("span", "option__note", option.note));
-    head.appendChild(spriteWrap);
     head.appendChild(titles);
+    card.appendChild(head);
 
-    button.appendChild(head);
-    button.appendChild(lotteryBar(option));
-    button.appendChild(lotteryList(option));
+    if (option.lottery || option.segments) {
+      card.appendChild(lotteryBar(state, option));
+      card.appendChild(lotteryList(state, option));
+    }
 
-    button.addEventListener("click", function () {
-      if (state.locked) return;
-      if (state.selected === option.id) {
-        lockChoice(state);
-      } else {
-        selectOption(state, option.id);
-      }
+    card.addEventListener("click", function () {
+      onPick(state, option.id);
     });
-    return button;
+    return card;
+  }
+
+  /* Big tap targets for "name your price" style rounds. */
+  function chipButton(state, option) {
+    var chip = el("button", "option option--chip");
+    chip.type = "button";
+    chip.setAttribute("data-option", option.id);
+    chip.setAttribute("aria-pressed", "false");
+    chip.appendChild(el("span", "chip__value", option.label));
+    if (option.note) chip.appendChild(el("span", "chip__unit", option.note));
+    chip.addEventListener("click", function () {
+      onPick(state, option.id);
+    });
+    return chip;
+  }
+
+  function onPick(state, optionId) {
+    if (state.locked || state.stage !== "choice") return;
+    if (state.selected === optionId) lockChoice(state);
+    else selectOption(state, optionId);
   }
 
   /* ------------------------------------------------------------------ */
@@ -221,10 +329,9 @@
     var shell = el("div", "game__shell");
 
     var bar = el("div", "game__bar");
-    var title = el("span", "game__title", game.title);
+    bar.appendChild(el("span", "game__title", game.title));
     var seed = el("span", "game__seed", "seed " + state.seed);
     seed.title = "Add ?seed=" + state.seed + " to the URL to repeat these draws";
-    bar.appendChild(title);
     bar.appendChild(seed);
     shell.appendChild(bar);
 
@@ -234,7 +341,7 @@
 
     var stage = el("div", "game__stage");
     stage.setAttribute("role", "region");
-    stage.setAttribute("aria-label", game.title + " game");
+    stage.setAttribute("aria-label", game.title);
     shell.appendChild(stage);
 
     var status = el("p", "visually-hidden");
@@ -257,20 +364,9 @@
   }
 
   function buildSteps(state) {
-    var game = state.game;
-    var steps = [{ key: "scene", label: "Scene" }];
-    (game.rounds || []).forEach(function (round, index) {
-      steps.push({
-        key: "round-" + index,
-        label: round.stepLabel || "Contract " + (index + 1)
-      });
-      if (
-        game.interlude &&
-        (game.interlude.afterRound === round.id ||
-          (!game.interlude.afterRound && index === 0))
-      ) {
-        steps.push({ key: "interlude", label: game.interlude.stepLabel || "Interlude" });
-      }
+    var steps = [{ key: "scene", label: "Intro" }];
+    (state.game.rounds || []).forEach(function (round, index) {
+      steps.push({ key: "round-" + index, label: round.stepLabel || "Deal " + (index + 1) });
     });
     steps.push({ key: "reveal", label: "Reveal" });
     state.steps = steps;
@@ -286,77 +382,73 @@
   }
 
   function setStep(state, key) {
-    state.stepKey = key;
     var index = -1;
-    (state.steps || []).forEach(function (step, i) {
+    state.steps.forEach(function (step, i) {
       if (step.key === key) index = i;
     });
-    Array.prototype.forEach.call(
-      state.stepsHost.querySelectorAll(".game__step"),
-      function (node, i) {
-        node.classList.toggle("is-current", i === index);
-        node.classList.toggle("is-done", i < index);
-        var num = node.querySelector(".game__step-num");
-        if (num) num.textContent = i < index ? "✓" : String(i + 1);
-      }
-    );
+    Array.prototype.forEach.call(state.stepsHost.querySelectorAll(".game__step"), function (node, i) {
+      node.classList.toggle("is-current", i === index);
+      node.classList.toggle("is-done", i < index);
+      var num = node.querySelector(".game__step-num");
+      if (num) num.textContent = i < index ? "✓" : String(i + 1);
+    });
+  }
+
+  function show(state, node, stepKey, statusText) {
+    FX.guard(350);
+    clear(state.stageHost);
+    setStep(state, stepKey);
+    state.stageHost.appendChild(node);
+    setStatus(state, statusText);
+    focusHeading(state);
+    resetScroll();
   }
 
   /* ------------------------------------------------------------------ */
   /* Scene                                                              */
   /* ------------------------------------------------------------------ */
 
+  function npcFigure(sprite, alt) {
+    var figure = el("div", "npc");
+    figure.appendChild(
+      root.GameAssets.img(sprite, { className: "sprite sprite--hero", alt: alt || "" })
+    );
+    return figure;
+  }
+
   function showScene(state) {
     state.stage = "scene";
     state.locked = false;
     state.selected = null;
-    clear(state.stageHost);
-    setStep(state, "scene");
 
     var game = state.game;
     var scene = game.scene || {};
-    var panel = el("section", "stage stage--scene");
+    var node = panel(state, "scene");
 
-    var figure = el("div", "scene-figure");
-    figure.appendChild(
-      root.GameAssets.img(scene.sprite, {
-        className: "sprite sprite--hero",
-        alt: scene.spriteAlt || ""
+    node.appendChild(npcFigure(scene.sprite, scene.spriteAlt));
+    node.appendChild(el("p", "eyebrow", scene.kicker || game.location || ""));
+    var heading = el("h1", "stage__title", scene.heading || game.title);
+    FX.glitch(heading);
+    node.appendChild(heading);
+
+    var copy = el("div", "stage__copy dialogue");
+    node.appendChild(copy);
+    var typing = FX.typeLines(copy, scene.lines || [], { timers: state.timers });
+    node.addEventListener("click", function (event) {
+      if (event.target.closest("button")) return;
+      typing.finish();
+    });
+
+    var bar = actionbar();
+    bar.appendChild(
+      button((scene.cta || "Continue") + " ▶", "btn--primary", function () {
+        typing.finish();
+        startRound(state, 0);
       })
     );
-    panel.appendChild(figure);
+    node.appendChild(bar);
 
-    panel.appendChild(el("p", "eyebrow", scene.kicker || "A caravan contract"));
-    var heading = el("h1", "stage__title", scene.heading || game.title);
-    panel.appendChild(heading);
-
-    var copy = el("div", "stage__copy");
-    (scene.lines || []).forEach(function (line) {
-      copy.appendChild(el("p", null, line));
-    });
-    panel.appendChild(copy);
-
-    var actions = el("div", "stage__actions");
-    var start = el("button", "btn btn--primary", scene.cta || "Continue");
-    start.type = "button";
-    start.addEventListener("click", function () {
-      startRound(state, 0);
-    });
-    actions.appendChild(start);
-    panel.appendChild(actions);
-
-    panel.appendChild(
-      el(
-        "p",
-        "hint",
-        "Your choices lock when you confirm them — no take-backs."
-      )
-    );
-
-    state.stageHost.appendChild(panel);
-    setStatus(state, scene.heading || game.title);
-    focusHeading(state);
-    resetScroll(state);
+    show(state, node, "scene", (scene.heading || game.title) + ". " + (scene.lines || []).join(" "));
   }
 
   /* ------------------------------------------------------------------ */
@@ -373,216 +465,41 @@
 
   function renderChoice(state) {
     var round = state.game.rounds[state.roundIndex];
-    clear(state.stageHost);
-    setStep(state, "round-" + state.roundIndex);
+    var prop = PROPS[state.game.prop] || {};
+    var node = panel(state, "choice");
+    node.setAttribute("data-round", round.id);
 
-    var panel = el("section", "stage stage--choice");
-    panel.setAttribute("data-round", round.id);
+    node.appendChild(el("p", "eyebrow", round.kicker || round.stepLabel || ""));
+    node.appendChild(el("h2", "stage__title", round.prompt));
+    if (round.intro) node.appendChild(el("p", "stage__lead", round.intro));
+    if (prop.choiceHeader) prop.choiceHeader(state, node, round);
 
-    if (round.kicker) panel.appendChild(el("p", "eyebrow", round.kicker));
-    var heading = el("h2", "stage__title", round.prompt);
-    panel.appendChild(heading);
-    if (round.intro) panel.appendChild(el("p", "stage__lead", round.intro));
-
-    var group = el("div", "options");
+    var chips = round.layout === "chips";
+    var group = el("div", chips ? "chips" : "options");
     group.setAttribute("role", "group");
-    group.setAttribute("aria-label", "Choose one contract");
+    group.setAttribute("aria-label", round.prompt);
     (round.options || []).forEach(function (option) {
-      group.appendChild(optionCard(state, option));
+      group.appendChild(chips ? chipButton(state, option) : optionCard(state, option));
     });
-    panel.appendChild(group);
+    node.appendChild(group);
 
-    var lockbar = el("div", "lockbar");
-    var hint = el("p", "hint");
+    var bar = actionbar();
+    var hint = el("p", "hint hint--keys");
     hint.innerHTML =
-      "Tap an option, then lock it in. Keys <kbd>1</kbd>–<kbd>" +
-      (round.options || []).length +
-      "</kbd> select · <kbd>Enter</kbd> locks.";
-    var lock = el("button", "btn btn--primary btn--lock", "Lock in your choice");
-    lock.type = "button";
-    lock.disabled = true;
-    lock.addEventListener("click", function () {
+      "Keys <kbd>1</kbd>–<kbd>" + (round.options || []).length + "</kbd> pick · <kbd>Enter</kbd> locks";
+    bar.appendChild(hint);
+    var lock = button("Pick one", "btn--primary btn--lock", function () {
       lockChoice(state);
     });
-    lockbar.appendChild(hint);
-    lockbar.appendChild(lock);
-    panel.appendChild(lockbar);
-
-    state.stageHost.appendChild(panel);
+    lock.disabled = true;
+    bar.appendChild(lock);
+    node.appendChild(bar);
     state.lockButton = lock;
 
-    setStatus(state, round.prompt);
-    focusHeading(state);
-    resetScroll(state);
+    show(state, node, "round-" + state.roundIndex, round.prompt);
   }
 
-  function selectOption(state, optionId) {
-    if (state.locked) return;
-    state.selected = optionId;
-    Array.prototype.forEach.call(
-      state.stageHost.querySelectorAll(".option"),
-      function (node) {
-        var on = node.getAttribute("data-option") === optionId;
-        node.classList.toggle("is-selected", on);
-        node.setAttribute("aria-pressed", on ? "true" : "false");
-      }
-    );
-    var round = state.game.rounds[state.roundIndex];
-    var option = null;
-    (round.options || []).forEach(function (item) {
-      if (item.id === optionId) option = item;
-    });
-    if (state.lockButton) {
-      state.lockButton.disabled = false;
-      state.lockButton.textContent = "Lock in " + optionId;
-    }
-    setStatus(
-      state,
-      "Selected " + optionId + (option ? ", " + option.label : "") + ". Press Enter or lock in."
-    );
-  }
-
-  function lockChoice(state) {
-    if (state.locked || !state.selected) return;
-    var round = state.game.rounds[state.roundIndex];
-    var chosen = null;
-    (round.options || []).forEach(function (option) {
-      if (option.id === state.selected) chosen = option;
-    });
-    if (!chosen) return;
-
-    state.locked = true;
-    state.choices[round.id] = chosen.id;
-
-    var stream = root.RNG.create(state.seed + "|" + round.id + "|draw");
-    var payoff = root.RNG.sample(stream, chosen.lottery);
-    state.draws[round.id] = { choice: chosen.id, payoff: payoff };
-
-    renderResolve(state, round, chosen, payoff);
-  }
-
-  /* ------------------------------------------------------------------ */
-  /* Resolve                                                            */
-  /* ------------------------------------------------------------------ */
-
-  function renderResolve(state, round, option, payoff) {
-    state.stage = "resolve";
-    clear(state.stageHost);
-    setStep(state, "round-" + state.roundIndex);
-
-    var panel = el("section", "stage stage--resolve");
-    panel.appendChild(el("p", "eyebrow", "Choice locked — " + round.stepLabel));
-    var heading = el(
-      "h2",
-      "stage__title",
-      (state.game.resolve && state.game.resolve.heading) || "The lock gives way…"
-    );
-    panel.appendChild(heading);
-
-    var stageBox = el("div", "resolve");
-    var chest = el("div", "resolve__chest");
-    var sprite = root.GameAssets.img(option.sprite, {
-      className: "sprite sprite--resolve",
-      alt: ""
-    });
-    chest.appendChild(sprite);
-    chest.appendChild(el("span", "resolve__flash"));
-    stageBox.appendChild(chest);
-
-    var summary = el("div", "resolve__card");
-    var badge = el("span", "badge badge--locked", "Locked in");
-    summary.appendChild(badge);
-    summary.appendChild(el("h3", "resolve__name", option.id + " — " + option.label));
-    summary.appendChild(lotteryBar(option));
-    summary.appendChild(lotteryList(option));
-    stageBox.appendChild(summary);
-    panel.appendChild(stageBox);
-
-    var outcome = el("div", "resolve__outcome");
-    outcome.hidden = true;
-    var value = el("p", "outcome__value");
-    value.appendChild(
-      root.GameAssets.img("icon_caps", {
-        className: "sprite sprite--caps",
-        alt: ""
-      })
-    );
-    value.appendChild(document.createTextNode(caps(payoff)));
-    outcome.appendChild(value);
-    var line = el(
-      "p",
-      "outcome__copy",
-      resolveCopy(state, payoff, option)
-    );
-    outcome.appendChild(line);
-    var next = el(
-      "button",
-      "btn btn--primary",
-      "Read the theory →"
-    );
-    next.type = "button";
-    next.addEventListener("click", function () {
-      showCheckpoint(state);
-    });
-    outcome.appendChild(next);
-    panel.appendChild(outcome);
-
-    state.stageHost.appendChild(panel);
-
-    var reduce = prefersReduced();
-    if (!reduce) {
-      chest.classList.add("is-resolving");
-    }
-    var delay = reduce ? 0 : 900;
-    state.timers.push(
-      root.setTimeout(function () {
-        if (state.destroyed) return;
-        chest.classList.remove("is-resolving");
-        heading.textContent = "The lock is open";
-        outcome.hidden = false;
-        try {
-          outcome.scrollIntoView({
-            block: "nearest",
-            behavior: reduce ? "auto" : "smooth"
-          });
-        } catch (err) {
-          /* Older browsers: the user can scroll normally. */
-        }
-        setStatus(state, "Outcome: " + caps(payoff) + ". " + line.textContent);
-        var button = outcome.querySelector(".btn");
-        if (button) {
-          try {
-            button.focus({ preventScroll: true });
-          } catch (err) {
-            button.focus();
-          }
-        }
-      }, delay)
-    );
-
-    setStatus(state, "Choice locked: " + option.id + ". Opening the lockbox.");
-    focusHeading(state);
-    resetScroll(state);
-  }
-
-  function resolveCopy(state, payoff, option) {
-    var resolve = state.game.resolve || {};
-    var worst = Infinity;
-    (option.lottery || []).forEach(function (part) {
-      if (Number(part.p) > 0 && Number(part.x) < worst) worst = Number(part.x);
-    });
-    var isWorst = worst !== Infinity && Number(payoff) === worst && worst === 0;
-    var template = isWorst
-      ? resolve.lose || "Nothing. The route took it all."
-      : resolve.win || "You count {x}.";
-    return String(template).replace("{x}", caps(payoff));
-  }
-
-  /* ------------------------------------------------------------------ */
-  /* Theory checkpoint (replaces the Phase 2 simulation)                */
-  /* ------------------------------------------------------------------ */
-
-  function roundOption(round, id) {
+  function optionById(round, id) {
     var found = null;
     (round.options || []).forEach(function (option) {
       if (option.id === id) found = option;
@@ -590,527 +507,446 @@
     return found;
   }
 
-  function checkpointFor(state) {
-    var game = state.game;
-    var round = game.rounds[state.roundIndex];
-    var choice = state.choices[round.id];
-    var logic = game.logic ? root[game.logic] : null;
-    if (!logic && root.GAMES) logic = root.GAMES[game.id];
-    if (!logic || typeof logic.checkpoint !== "function") {
-      console.warn("[engine] no checkpoint logic for " + game.id);
-      return null;
+  function selectOption(state, optionId) {
+    if (state.locked) return;
+    state.selected = optionId;
+    Array.prototype.forEach.call(state.stageHost.querySelectorAll(".option"), function (node) {
+      var on = node.getAttribute("data-option") === optionId;
+      node.classList.toggle("is-selected", on);
+      node.setAttribute("aria-pressed", on ? "true" : "false");
+    });
+    var round = state.game.rounds[state.roundIndex];
+    var option = optionById(round, optionId);
+    var name = option ? option.lockLabel || option.id : optionId;
+    if (state.lockButton) {
+      state.lockButton.disabled = false;
+      state.lockButton.textContent = "Lock in " + name + " ▶";
     }
-    try {
-      return logic.checkpoint(round, choice, game);
-    } catch (err) {
-      console.warn("[engine] checkpoint failed:", err);
-      return null;
-    }
+    var described = option && !option.lockLabel ? ", " + option.label : "";
+    setStatus(state, "Selected " + name + described + ". Tap again or press Lock in.");
   }
 
-  function showCheckpoint(state) {
-    state.stage = "checkpoint";
-    clear(state.stageHost);
-    setStep(state, "round-" + state.roundIndex);
+  function lockChoice(state) {
+    if (state.locked || !state.selected) return;
+    var round = state.game.rounds[state.roundIndex];
+    var chosen = optionById(round, state.selected);
+    if (!chosen) return;
 
-    var game = state.game;
-    var round = game.rounds[state.roundIndex];
-    var data = checkpointFor(state);
-    var chosenId = state.choices[round.id];
-    var chosen = data && data.chosenOption
-      ? data.chosenOption
-      : roundOption(round, chosenId);
-    var otherId = data ? data.other : null;
-    var other = data && data.otherOption
-      ? data.otherOption
-      : roundOption(round, otherId);
+    state.locked = true;
+    state.choices[round.id] = chosen.id;
+    FX.buzz(20);
 
-    var panel = el("section", "stage stage--checkpoint");
-    panel.setAttribute("data-round", round.id);
-    panel.appendChild(
-      el(
-        "p",
-        "eyebrow",
-        ((game.checkpoint && game.checkpoint.kicker) || "Theory checkpoint") +
-          " · " +
-          (round.stepLabel || "Contract")
-      )
-    );
-    var heading = el("h2", "stage__title", "What this choice implies");
-    panel.appendChild(heading);
-
-    if (chosen && other) {
-      var pair = el("div", "checkpoint__pair");
-      var chosenSide = el("div", "checkpoint__side is-chosen");
-      chosenSide.appendChild(
-        el(
-          "span",
-          "checkpoint__side-label",
-          (game.checkpoint && game.checkpoint.chosenLabel) || "Your choice"
-        )
-      );
-      chosenSide.appendChild(
-        el("strong", "checkpoint__side-name", chosen.id + " — " + chosen.label)
-      );
-      pair.appendChild(chosenSide);
-      pair.appendChild(el("span", "checkpoint__vs", "≻"));
-      var otherSide = el("div", "checkpoint__side");
-      otherSide.appendChild(
-        el(
-          "span",
-          "checkpoint__side-label",
-          (game.checkpoint && game.checkpoint.otherLabel) || "The alternative"
-        )
-      );
-      otherSide.appendChild(
-        el("strong", "checkpoint__side-name", other.id + " — " + other.label)
-      );
-      pair.appendChild(otherSide);
-      panel.appendChild(pair);
+    var logic = logicFor(state.game);
+    var last = state.roundIndex === state.game.rounds.length - 1;
+    if (state.game.resolveAtEnd && !last) {
+      setStatus(state, "Locked in " + (chosen.lockLabel || chosen.id) + ".");
+      afterRound(state);
+      return;
     }
 
-    if (data) {
-      var formula = el("figure", "checkpoint__formula");
-      var host = el("div", "formula__math");
-      math(host, data.equivalenceTex, true);
-      formula.appendChild(host);
-      var caption = el("figcaption", "formula__caption");
-      caption.appendChild(el("span", "slide-ref", "Slide 11"));
-      caption.appendChild(el("span", null, "u(0) = 0"));
-      formula.appendChild(caption);
-      panel.appendChild(formula);
-
-      panel.appendChild(
-        el(
-          "p",
-          "checkpoint__sentence",
-          "Under expected utility, this choice means " +
-            data.inequalityPlain +
-            "."
-        )
-      );
+    var rng = roundRng(state, round, "draw");
+    var outcome;
+    if (state.game.resolveAtEnd && logic && typeof logic.resolveAll === "function") {
+      outcome = logic.resolveAll(state.game.rounds, state.choices, state.ctx, rng, state.game);
+    } else if (logic && typeof logic.resolve === "function") {
+      outcome = logic.resolve(round, chosen, state.ctx, rng, state.game);
     } else {
-      panel.appendChild(
-        el(
-          "p",
-          "checkpoint__sentence",
-          "Your choice is locked. The theory panel could not load the algebra; reload the page or check the browser console."
-        )
-      );
+      outcome = { payoff: root.RNG.sample(rng, chosen.lottery || []) };
     }
+    state.draws[round.id] = outcome;
+    renderResolve(state, round, chosen, outcome);
+  }
 
-    panel.appendChild(
-      el(
-        "p",
-        "hint",
-        "This is the requirement your choice imposes on any utility function. No simulation is run."
-      )
+  /* ------------------------------------------------------------------ */
+  /* Resolve                                                            */
+  /* ------------------------------------------------------------------ */
+
+  function renderResolve(state, round, option, outcome) {
+    state.stage = "resolve";
+    var game = state.game;
+    var resolve = game.resolve || {};
+    var node = panel(state, "resolve");
+
+    node.appendChild(
+      el("p", "eyebrow", game.resolveAtEnd ? "All bets locked" : "Locked in · " + (round.stepLabel || ""))
     );
+    var heading = el("h2", "stage__title", resolve.heading || "Here goes…");
+    node.appendChild(heading);
 
-    var actions = el("div", "stage__actions");
-    var next = el("button", "btn btn--primary", nextLabel(state));
-    next.type = "button";
-    next.addEventListener("click", function () {
+    var propHost = el("div", "prop");
+    node.appendChild(propHost);
+
+    var result = el("div", "result");
+    result.hidden = true;
+    var value = el("p", "result__value");
+    value.appendChild(root.GameAssets.img("icon_caps", { className: "sprite sprite--caps", alt: "" }));
+    var number = el("span", "result__num", caps(0));
+    value.appendChild(number);
+    result.appendChild(value);
+    var line = el("p", "result__copy", outcome.copy || resolveCopy(state, outcome.payoff, option));
+    result.appendChild(line);
+    node.appendChild(result);
+
+    var bar = actionbar();
+    var next = button(nextLabel(state) + " ▶", "btn--primary", function () {
       afterRound(state);
     });
-    actions.appendChild(next);
-    panel.appendChild(actions);
+    next.disabled = true;
+    bar.appendChild(next);
+    node.appendChild(bar);
 
-    state.stageHost.appendChild(panel);
-    setStatus(
-      state,
-      "Theory checkpoint. " +
-        (data
-          ? data.chosen + " over " + data.other + " requires " + data.inequalityPlain + "."
-          : "Algebra unavailable.")
-    );
-    focusHeading(state);
-    resetScroll(state);
+    show(state, node, "round-" + state.roundIndex, "Locked in " + (option.lockLabel || option.id) + ".");
+
+    var prop = PROPS[game.prop] || PROPS.chest;
+    prop.play(state, propHost, option, outcome, function () {
+      if (state.destroyed) return;
+      /* A net result (prize minus fee) decides the mood when there is one. */
+      var won = outcome.net != null ? outcome.net >= 0 : Number(outcome.payoff) > 0;
+      var after = outcome.heading || (won ? resolve.winHeading : resolve.loseHeading);
+      if (after) heading.textContent = after;
+      result.hidden = false;
+      result.classList.toggle("is-lose", !won);
+      if (!FX.instant()) result.classList.add("flicker-in");
+      FX.countUp(number, 0, Number(outcome.payoff) || 0, {
+        format: caps,
+        timers: state.timers
+      });
+      next.disabled = false;
+      setStatus(state, "Outcome: " + caps(outcome.payoff) + ". " + line.textContent);
+      try {
+        next.focus({ preventScroll: true });
+      } catch (err) {
+        next.focus();
+      }
+      try {
+        result.scrollIntoView({ block: "nearest", behavior: FX.reduced() ? "auto" : "smooth" });
+      } catch (err) {
+        /* Older browsers: the player can scroll. */
+      }
+    });
+  }
+
+  function resolveCopy(state, payoff, option) {
+    var resolve = state.game.resolve || {};
+    var template = Number(payoff) === 0
+      ? resolve.lose || "Nothing this time."
+      : resolve.win || "You get {x}.";
+    return String(template).replace("{x}", caps(payoff));
   }
 
   function nextLabel(state) {
-    var game = state.game;
     var nextIndex = state.roundIndex + 1;
-    if (nextIndex < (game.rounds || []).length) {
-      if (
-        game.interlude &&
-        (game.interlude.afterRound === game.rounds[state.roundIndex].id ||
-          (!game.interlude.afterRound && state.roundIndex === 0))
-      ) {
-        return game.interlude.cta || "Continue";
-      }
-      return "Next contract →";
-    }
-    return "See what it all means →";
+    if (nextIndex < state.game.rounds.length) return "Next";
+    return "The reveal";
   }
 
   function afterRound(state) {
     var game = state.game;
     var round = game.rounds[state.roundIndex];
     var nextIndex = state.roundIndex + 1;
-    if (
-      game.interlude &&
-      (game.interlude.afterRound === round.id ||
-        (!game.interlude.afterRound && state.roundIndex === 0)) &&
-      nextIndex < game.rounds.length
-    ) {
-      if (isFast()) {
-        startRound(state, nextIndex);
-        return;
-      }
-      showInterlude(state);
+    if (nextIndex >= game.rounds.length) {
+      showReveal(state);
       return;
     }
-    if (nextIndex < game.rounds.length) {
-      startRound(state, nextIndex);
+    if (game.beat && game.beat.afterRound === round.id && !FX.fast()) {
+      showBeat(state, nextIndex);
       return;
     }
-    showReveal(state);
+    startRound(state, nextIndex);
   }
 
   /* ------------------------------------------------------------------ */
-  /* Interlude                                                          */
+  /* Beat: a few seconds of travel between rounds                       */
   /* ------------------------------------------------------------------ */
 
-  function showInterlude(state) {
-    state.stage = "interlude";
-    state.locked = false;
-    clear(state.stageHost);
-    setStep(state, "interlude");
+  function showBeat(state, nextIndex) {
+    state.stage = "beat";
+    var beat = state.game.beat;
+    var node = panel(state, "beat");
+    node.appendChild(el("p", "eyebrow", beat.kicker || "Meanwhile…"));
+    var heading = el("h2", "visually-hidden", "Travel");
+    node.appendChild(heading);
+    var copy = el("div", "stage__copy dialogue");
+    node.appendChild(copy);
 
-    var interlude = state.game.interlude;
-    var panel = el("section", "stage stage--interlude");
-    panel.appendChild(el("p", "eyebrow", interlude.kicker || "Interlude"));
-    var heading = el("h2", "stage__title", interlude.heading || "Weigh the cargo");
-    panel.appendChild(heading);
-
-    var figure = el("div", "interlude__figure");
-    figure.appendChild(
-      root.GameAssets.img(interlude.sprite, {
-        className: "sprite sprite--hero",
-        alt: interlude.spriteAlt || ""
-      })
-    );
-    panel.appendChild(figure);
-
-    var copy = el("div", "stage__copy");
-    (interlude.lines || []).forEach(function (line) {
-      copy.appendChild(el("p", null, line));
-    });
-    panel.appendChild(copy);
-
-    var seconds = isFast() ? 0 : Number(interlude.seconds) || 20;
-    var clock = el("div", "countdown");
-    var number = el("span", "countdown__num", String(seconds));
-    var unit = el("span", "countdown__unit", seconds === 1 ? "second" : "seconds");
-    clock.appendChild(number);
-    clock.appendChild(unit);
-    var track = el("div", "countdown__track");
-    var fill = el("div", "countdown__fill");
-    fill.style.width = "100%";
+    var seconds = Math.max(1, Number(beat.seconds) || 3);
+    var track = el("div", "beat__track");
+    var fill = el("div", "beat__fill");
+    fill.style.animationDuration = seconds + "s";
     track.appendChild(fill);
-    clock.appendChild(track);
-    panel.appendChild(clock);
+    node.appendChild(track);
 
-    var actions = el("div", "stage__actions");
-    var cont = el(
-      "button",
-      "btn btn--primary",
-      interlude.cta || "Continue to the next contract"
-    );
-    cont.type = "button";
-    cont.addEventListener("click", function () {
+    var moved = false;
+    function go() {
+      if (moved || state.destroyed) return;
+      moved = true;
       clearTimers(state);
-      startRound(state, state.roundIndex + 1);
-    });
-    actions.appendChild(cont);
-    panel.appendChild(actions);
-    panel.appendChild(
-      el(
-        "p",
-        "hint",
-        seconds === 0
-          ? "Demo mode (?fast=1): the interlude is skipped."
-          : "The countdown is for atmosphere; you can continue at any time."
-      )
-    );
-
-    state.stageHost.appendChild(panel);
-
-    if (seconds > 0) {
-      var remaining = seconds;
-      var total = seconds;
-      state.timers.push(
-        root.setInterval(function () {
-          if (state.destroyed) return;
-          remaining -= 1;
-          if (remaining < 0) remaining = 0;
-          number.textContent = String(remaining);
-          unit.textContent = remaining === 1 ? "second" : "seconds";
-          fill.style.width = (remaining / total) * 100 + "%";
-          if (remaining === 0) {
-            clearTimers(state);
-            number.textContent = "0";
-            setStatus(state, "Cargo weighed. Continue when you are ready.");
-          }
-        }, 1000)
-      );
-      setStatus(
-        state,
-        (interlude.heading || "Interlude") + ". " + seconds + " second countdown."
-      );
-    } else {
-      setStatus(state, "Interlude skipped in demo mode.");
+      startRound(state, nextIndex);
     }
-    focusHeading(state);
-    resetScroll(state);
+    var bar = actionbar();
+    bar.appendChild(button(FX.reduced() ? "Continue ▶" : "Skip ▶", "btn--ghost", go));
+    node.appendChild(bar);
+
+    FX.typeLines(copy, beat.lines || [], { timers: state.timers, speed: 14 });
+    show(state, node, "round-" + (nextIndex - 1), (beat.lines || []).join(" "));
+    if (!FX.reduced()) {
+      FX.later(state.timers, go, seconds * 1000 + 600);
+    }
   }
 
   /* ------------------------------------------------------------------ */
   /* Reveal                                                             */
   /* ------------------------------------------------------------------ */
 
-  function showReveal(state) {
-    state.stage = "reveal";
-    clear(state.stageHost);
-    setStep(state, "reveal");
-
-    var game = state.game;
-    var verdict = computeVerdict(state);
-
-    if (root.GameStore && typeof root.GameStore.setResult === "function") {
-      root.GameStore.setResult(game.id, {
-        pattern: verdict ? verdict.pattern : null,
-        choices: state.choices,
-        consistent: verdict ? verdict.consistent : null,
-        verdictLabel: verdict ? verdict.verdictLabel : null,
-        algebraTex: verdict ? verdict.algebraTex : null,
-        seed: state.seed,
-        slideRefs: game.slideRefs || []
-      });
-    }
-
-    var panel = el("section", "stage stage--reveal");
-    panel.appendChild(el("p", "eyebrow", "Both contracts locked · the reveal"));
-    var heading = el("h1", "stage__title", (game.reveal && game.reveal.name) || game.paradox);
-    panel.appendChild(heading);
-    if (game.reveal && game.reveal.kicker) {
-      panel.appendChild(el("p", "reveal__kicker", game.reveal.kicker));
-    }
-
-    var intro = el("div", "reveal__intro");
-    var paragraphs = (game.reveal && game.reveal.paragraphs) || [];
-    if (!paragraphs.length && game.reveal && game.reveal.explanation) {
-      paragraphs = [game.reveal.explanation];
-    }
-    paragraphs.forEach(function (text) {
-      intro.appendChild(el("p", null, text));
-    });
-    panel.appendChild(intro);
-
-    var formulas = (game.reveal && game.reveal.formulas) || [];
-    if (
-      !formulas.length &&
-      game.reveal &&
-      game.reveal.formulasTex &&
-      game.reveal.formulasTex.length
-    ) {
-      formulas = game.reveal.formulasTex.map(function (tex) {
-        return {
-          tex: tex,
-          ref: (game.slideRefs && game.slideRefs[0]) || null
-        };
-      });
-    }
-    if (verdict) {
-      formulas = formulas.filter(function (formula) {
-        if (formula.when === "inconsistent" && verdict.consistent) return false;
-        if (formula.when === "consistent" && !verdict.consistent) return false;
-        return true;
-      });
-    }
-    if (formulas.length) {
-      var formulaGrid = el("div", "formula-grid");
-      formulas.forEach(function (formula) {
-        var figure = el("figure", "formula");
-        var host = el("div", "formula__math");
-        math(host, formula.tex, true);
-        figure.appendChild(host);
-        var caption = el("figcaption", "formula__caption");
-        if (formula.ref) {
-          caption.appendChild(el("span", "slide-ref", "Slide " + formula.ref));
-        }
-        if (formula.note) caption.appendChild(el("span", null, formula.note));
-        figure.appendChild(caption);
-        formulaGrid.appendChild(figure);
-      });
-      panel.appendChild(formulaGrid);
-    }
-
-    panel.appendChild(verdictPanel(verdict));
-
-    if (game.reveal && game.reveal.benchmarkNote) {
-      panel.appendChild(
-        el("p", "reveal__benchmark", game.reveal.benchmarkNote)
-      );
-    }
-
-    if (game.reveal && game.reveal.showTriangle && root.Figures) {
-      var details = el("details", "triangle");
-      details.appendChild(el("summary", "triangle__summary", "The probability triangle (Slide 12)"));
-      var triangleHost = el("div", "triangle__host");
-      try {
-        triangleHost.innerHTML = root.Figures.triangleSVG();
-      } catch (err) {
-        console.warn("[engine] could not draw the triangle:", err);
-      }
-      details.appendChild(triangleHost);
-      if (game.reveal.triangleCaption) {
-        details.appendChild(el("p", "triangle__caption", game.reveal.triangleCaption));
-      }
-      panel.appendChild(details);
-    }
-
-    var actions = el("div", "stage__actions stage__actions--reveal");
-    var report = el("a", "btn btn--primary", "See your Report Card");
-    report.href = "#report";
-    var hub = el("a", "btn btn--ghost", "Back to entry screen");
-    hub.href = "index.html";
-    actions.appendChild(report);
-    actions.appendChild(hub);
-    panel.appendChild(actions);
-
-    if (game.reveal && game.reveal.footnote) {
-      panel.appendChild(el("p", "reveal__footnote", game.reveal.footnote));
-    }
-
-    state.stageHost.appendChild(panel);
-    setStatus(
-      state,
-      "Reveal: " + ((game.reveal && game.reveal.name) || game.paradox) + ". " +
-        (verdict ? verdict.verdictLabel : "")
-    );
-    focusHeading(state);
-    resetScroll(state);
-  }
-
-  function computeVerdict(state) {
-    var game = state.game;
-    var logic = game.logic ? root[game.logic] : null;
-    if (!logic && root.GAMES) logic = root.GAMES[game.id];
-    if (!logic || typeof logic.verdict !== "function") {
-      console.warn("[engine] no verdict logic for " + game.id);
+  function summaryFor(state) {
+    var logic = logicFor(state.game);
+    if (!logic || typeof logic.reveal !== "function") {
+      console.warn("[engine] no reveal logic for " + state.game.id);
       return null;
     }
     try {
-      return logic.verdict(state.choices, game);
+      return logic.reveal(state.choices, state.game, state.ctx, state.draws);
     } catch (err) {
-      console.warn("[engine] verdict failed:", err);
+      console.warn("[engine] reveal failed:", err);
       return null;
     }
   }
 
-  function verdictPanel(verdict) {
-    var panel = el("section", "verdict-panel");
-    panel.setAttribute("aria-labelledby", "verdict-title");
-
-    var head = el("header", "verdict-panel__head");
-    head.appendChild(el("p", "eyebrow", "You vs. expected utility"));
-    var title = el("h2", "verdict-panel__title", verdict
-      ? verdict.verdictTitle
-      : "Verdict unavailable");
-    title.id = "verdict-title";
-    head.appendChild(title);
-    if (verdict) {
-      var pattern = el("p", "verdict-panel__pattern");
-      pattern.appendChild(el("span", "badge", "Pattern " + verdict.pattern));
-      pattern.appendChild(
-        el(
-          "span",
-          "verdict-panel__choice",
-          "Round 1: " + verdict.choices.r1 + " · Round 2: " + verdict.choices.r2
-        )
-      );
-      head.appendChild(pattern);
-    }
-    panel.appendChild(head);
-
-    if (!verdict) {
-      panel.appendChild(
-        el(
-          "p",
-          "verdict-panel__copy",
-          "The choice pattern was recorded, but the verdict module did not load. Reload the page or check the browser console."
-        )
-      );
-      return panel;
-    }
-
-    var verdictClass = verdict.consistent ? "is-consistent" : "is-inconsistent";
-    panel.classList.add(verdictClass);
-
-    var ineq = el("div", "verdict-panel__ineq");
-    [verdict.round1, verdict.round2].forEach(function (side) {
-      if (!side) return;
-      var row = el("div", "ineq-row");
-      row.appendChild(
-        el(
-          "div",
-          "ineq-row__premise",
-          side.chosen + " ≻ " + side.other + " implies"
-        )
-      );
-      var mathHost = el("div", "ineq-row__math");
-      math(mathHost, side.inequalityTex, true);
-      row.appendChild(mathHost);
-      ineq.appendChild(row);
-    });
-    panel.appendChild(ineq);
-
-    var algebra = el("div", "verdict-panel__algebra");
-    math(algebra, verdict.algebraTex, true);
-    panel.appendChild(algebra);
-
-    panel.appendChild(el("p", "verdict-panel__copy", verdict.plainExplanation));
-    if (verdict.utilityNote) {
-      panel.appendChild(el("p", "verdict-panel__note", verdict.utilityNote));
-    }
-
-    var algebraWrap = el("details", "verdict-panel__details");
-    algebraWrap.appendChild(
-      el("summary", null, "How the two inequalities give the verdict")
-    );
-    var explain = el("div", "verdict-panel__algebra-explain");
-    var chain = el("p", null, "Each choice is written as a comparison of expected utilities, with u(0) = 0. The two required inequalities point in opposite directions, so no utility function can satisfy both.");
-    chain.hidden = verdict.consistent;
-    explain.appendChild(chain);
-    var same = el(
-      "p",
-      null,
-      "Both choices reduce to the same inequality, so a single utility function can produce the pattern."
-    );
-    same.hidden = !verdict.consistent;
-    explain.appendChild(same);
-    algebraWrap.appendChild(explain);
-    panel.appendChild(algebraWrap);
-
-    return panel;
+  function slideTag(n) {
+    return el("span", "slide-ref", "Slide " + n);
   }
+
+  function figureSVG(name) {
+    var F = root.Figures || {};
+    if (name === "triangle" && F.triangleSVG) return F.triangleSVG();
+    if (name === "weighting" && F.weightingSVG) return F.weightingSVG();
+    return "";
+  }
+
+  var FIGURE_CAPTIONS = {
+    triangle: { slide: 8, title: "The probability triangle" },
+    weighting: { slide: 14, title: "Probability weighting" }
+  };
+
+  function mathBox(state, reveal, summary) {
+    var details = el("details", "mathbox");
+    details.appendChild(el("summary", "mathbox__summary", "Show the math"));
+    var body = el("div", "mathbox__body");
+
+    ((summary && summary.math) || []).forEach(function (row) {
+      var fig = el("figure", "formula");
+      if (row.label) fig.appendChild(el("figcaption", "formula__label", row.label));
+      var host = el("div", "formula__math");
+      host.setAttribute("data-tex", row.tex);
+      host.textContent = row.tex;
+      fig.appendChild(host);
+      body.appendChild(fig);
+    });
+
+    (reveal.figures || []).forEach(function (name) {
+      var svg = figureSVG(name);
+      if (!svg) return;
+      var meta = FIGURE_CAPTIONS[name] || {};
+      var fig = el("figure", "figure");
+      var cap = el("figcaption", "figure__title");
+      if (meta.slide) cap.appendChild(slideTag(meta.slide));
+      cap.appendChild(el("span", null, meta.title || ""));
+      fig.appendChild(cap);
+      var host = el("div", "figure__host");
+      host.innerHTML = svg;
+      fig.appendChild(host);
+      var text = name === "triangle" ? reveal.triangleCaption : reveal.weightingCaption;
+      if (text) fig.appendChild(el("p", "figure__caption", text));
+      body.appendChild(fig);
+    });
+
+    (reveal.notes || []).forEach(function (note) {
+      var p = el("p", "mathbox__note");
+      if (note.slide) p.appendChild(slideTag(note.slide));
+      p.appendChild(document.createTextNode(" " + note.text));
+      body.appendChild(p);
+    });
+
+    if (reveal.crowdSource) {
+      body.appendChild(el("p", "mathbox__source", "Crowd data: " + reveal.crowdSource + "."));
+    }
+
+    details.appendChild(body);
+    lazyMath(details);
+    return details;
+  }
+
+  function showReveal(state) {
+    state.stage = "reveal";
+    var game = state.game;
+    var reveal = game.reveal || {};
+    var summary = summaryFor(state);
+
+    if (root.GameStore && typeof root.GameStore.setResult === "function") {
+      root.GameStore.setResult(game.id, {
+        you: summary ? summary.you : null,
+        crowdMatch: summary ? !!summary.crowdMatch : null,
+        consistent: summary ? summary.consistent : null,
+        stamp: summary ? summary.stamp : null,
+        choices: state.choices,
+        seed: state.seed
+      });
+    }
+
+    var node = panel(state, "reveal");
+    var eyebrow = el("p", "eyebrow", "Reveal");
+    if (reveal.slide) {
+      eyebrow.appendChild(document.createTextNode(" · "));
+      eyebrow.appendChild(slideTag(reveal.slide));
+    }
+    node.appendChild(eyebrow);
+    var heading = el("h1", "stage__title reveal__name", reveal.name || game.paradox);
+    FX.glitch(heading);
+    node.appendChild(heading);
+    if (reveal.kicker) node.appendChild(el("p", "reveal__kicker", reveal.kicker));
+
+    if (summary && summary.stamp) {
+      node.appendChild(FX.stamp(summary.stamp.text, summary.stamp.tone));
+    }
+
+    var versus = el("dl", "versus");
+    function vsRow(label, value, cls) {
+      var row = el("div", "versus__row" + (cls ? " " + cls : ""));
+      row.appendChild(el("dt", null, label));
+      row.appendChild(el("dd", null, value));
+      versus.appendChild(row);
+    }
+    vsRow("You", summary ? summary.you : "—", "is-you");
+    vsRow("Crowd", reveal.crowd || "—");
+    node.appendChild(versus);
+
+    if (summary && summary.line) node.appendChild(el("p", "reveal__line", summary.line));
+
+    if (summary && summary.chain && summary.chain.length) {
+      var chain = el("ol", "chain");
+      summary.chain.forEach(function (step, i) {
+        var li = el("li", "chain__step", step);
+        li.style.animationDelay = FX.instant() ? "0s" : 0.35 + i * 0.6 + "s";
+        chain.appendChild(li);
+      });
+      node.appendChild(chain);
+      /* The punchline is the last step: make sure it is not under the bar. */
+      if (!FX.instant()) {
+        FX.later(state.timers, function () {
+          try {
+            chain.scrollIntoView({ block: "nearest", behavior: "smooth" });
+          } catch (err) {
+            /* Older browsers: the player can scroll. */
+          }
+        }, 350 + summary.chain.length * 600 + 300);
+      }
+    }
+
+    if (summary && summary.tiles && summary.tiles.length) {
+      var tiles = el("div", "tiles");
+      summary.tiles.forEach(function (tile) {
+        var t = el("div", "tile" + (tile.mine ? " is-mine" : ""));
+        t.appendChild(el("span", "tile__label", tile.label));
+        t.appendChild(el("strong", "tile__value", tile.value));
+        if (tile.note) t.appendChild(el("span", "tile__note", tile.note));
+        tiles.appendChild(t);
+      });
+      node.appendChild(tiles);
+    }
+
+    var prop = PROPS[game.prop] || {};
+    if (prop.revealExtra) prop.revealExtra(state, node, summary);
+
+    if (reveal.takeaway) {
+      var quote = el("blockquote", "takeaway");
+      quote.appendChild(el("p", null, reveal.takeaway));
+      var cite = el("footer", "takeaway__cite");
+      if (reveal.slide) cite.appendChild(slideTag(reveal.slide));
+      cite.appendChild(el("span", null, "From the lecture slides"));
+      quote.appendChild(cite);
+      node.appendChild(quote);
+    }
+
+    node.appendChild(mathBox(state, reveal, summary));
+
+    var bar = actionbar();
+    bar.classList.add("actionbar--row");
+    var order = CONFIG.encounterOrder || [];
+    var at = order.indexOf(game.id);
+    var nextId = null;
+    for (var i = 1; i <= order.length; i += 1) {
+      var candidate = order[(at + i) % order.length];
+      if (candidate !== game.id && !(root.GameStore && root.GameStore.isDone(candidate))) {
+        nextId = candidate;
+        break;
+      }
+    }
+    var primary = el("a", "btn btn--primary");
+    if (nextId) {
+      primary.href = "#" + nextId;
+      primary.textContent = "Next deal ▶";
+    } else {
+      primary.href = "#report";
+      primary.textContent = "Report Card ▶";
+    }
+    bar.appendChild(primary);
+    var mapLink = el("a", "btn btn--ghost", "Map");
+    mapLink.href = "#map";
+    bar.appendChild(mapLink);
+    node.appendChild(bar);
+
+    show(
+      state,
+      node,
+      "reveal",
+      (reveal.name || game.paradox) + ". " + (summary && summary.stamp ? summary.stamp.text + ". " : "") +
+        (summary && summary.line ? summary.line : "")
+    );
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Props: outcome animations                                          */
+  /* ------------------------------------------------------------------ */
+
+  var PROPS = {
+    /* The original lockbox: shake, flash, open. */
+    chest: {
+      play: function (state, host, option, outcome, done) {
+        var box = el("div", "prop__chest");
+        box.appendChild(
+          root.GameAssets.img(option.sprite, { className: "sprite sprite--resolve", alt: "" })
+        );
+        box.appendChild(el("span", "prop__flash"));
+        host.appendChild(box);
+        var card = el("div", "prop__card");
+        card.appendChild(el("p", "prop__name", option.id + " — " + option.label));
+        card.appendChild(lotteryBar(state, option));
+        host.appendChild(card);
+        if (FX.instant()) {
+          done();
+          return;
+        }
+        box.classList.add("is-resolving");
+        FX.later(state.timers, function () {
+          box.classList.remove("is-resolving");
+          box.classList.add(Number(outcome.payoff) > 0 ? "is-win" : "is-lose");
+          done();
+        }, 900);
+      }
+    }
+  };
 
   /* ------------------------------------------------------------------ */
   /* Keyboard                                                           */
   /* ------------------------------------------------------------------ */
 
   function onKeyDown(state, event) {
-    if (state.destroyed) return;
-    if (event.defaultPrevented) return;
+    if (state.destroyed || event.defaultPrevented) return;
     if (event.ctrlKey || event.metaKey || event.altKey) return;
     var tag = (event.target && event.target.tagName) || "";
     if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
-    if (event.target && event.target.isContentEditable) return;
 
-    /* Enter on a real control must use its native activation. Otherwise a
-       focused "← Hub" link would start or lock the game instead of leaving. */
+    /* Enter on a real control keeps its native activation. */
     if (
       event.key === "Enter" &&
       event.target &&
@@ -1125,9 +961,7 @@
       var index = parseInt(event.key, 10) - 1;
       if (index >= 0 && index < (round.options || []).length) {
         event.preventDefault();
-        var option = round.options[index];
-        if (state.selected === option.id) lockChoice(state);
-        else selectOption(state, option.id);
+        onPick(state, round.options[index].id);
         return;
       }
       if (event.key === "Enter" && state.selected) {
@@ -1137,20 +971,9 @@
       return;
     }
 
-    if (event.key === "Enter") {
-      var target = event.target;
-      if (target && target.tagName === "BUTTON") return; /* let the button do it */
-      if (state.stage === "scene") {
-        event.preventDefault();
-        startRound(state, 0);
-      } else if (state.stage === "checkpoint") {
-        event.preventDefault();
-        afterRound(state);
-      } else if (state.stage === "interlude") {
-        event.preventDefault();
-        clearTimers(state);
-        startRound(state, state.roundIndex + 1);
-      }
+    if (event.key === "Enter" && state.stage === "scene") {
+      event.preventDefault();
+      startRound(state, 0);
     }
   }
 
@@ -1160,10 +983,26 @@
 
   function clearTimers(state) {
     (state.timers || []).forEach(function (timer) {
+      if (timer && typeof timer.cancel === "function") {
+        timer.cancel();
+        return;
+      }
       root.clearTimeout(timer);
       root.clearInterval(timer);
     });
     state.timers = [];
+  }
+
+  function maxPayoffOf(game) {
+    var max = 0;
+    (game.rounds || []).forEach(function (round) {
+      (round.options || []).forEach(function (option) {
+        (option.lottery || []).forEach(function (part) {
+          if (Number(part.x) > max) max = Number(part.x);
+        });
+      });
+    });
+    return max;
   }
 
   function mount(host, game) {
@@ -1176,28 +1015,26 @@
       seed: root.RNG.seedFromUrl(root.location.search) || root.RNG.makeSeed(),
       choices: {},
       draws: {},
+      ctx: {},
       roundIndex: 0,
       stage: "scene",
       selected: null,
       locked: false,
       destroyed: false,
       timers: [],
-      stepKey: "scene"
+      maxPayoff: maxPayoffOf(game)
     };
+    var logic = logicFor(game);
+    if (logic && typeof logic.init === "function") {
+      state.ctx = logic.init(roundRng(state, null, "init"), game) || {};
+    }
     current = state;
 
     clear(host);
     buildShell(state);
     buildSteps(state);
     showScene(state);
-
-    return {
-      state: state,
-      seed: state.seed,
-      destroy: function () {
-        stop();
-      }
-    };
+    return state;
   }
 
   function stop() {
@@ -1205,9 +1042,7 @@
     var state = current;
     state.destroyed = true;
     clearTimers(state);
-    if (state.keyHandler) {
-      document.removeEventListener("keydown", state.keyHandler);
-    }
+    if (state.keyHandler) document.removeEventListener("keydown", state.keyHandler);
     if (state.host) clear(state.host);
     current = null;
   }
@@ -1215,6 +1050,14 @@
   root.Engine = {
     mount: mount,
     stop: stop,
+    props: PROPS,
+    helpers: {
+      el: el,
+      clear: clear,
+      caps: caps,
+      intText: intText,
+      lotteryBar: lotteryBar
+    },
     get current() {
       return current;
     }

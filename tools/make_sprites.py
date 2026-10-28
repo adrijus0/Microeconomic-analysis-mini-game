@@ -58,6 +58,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SPRITE_DIR = ROOT / "docs" / "assets" / "sprites" / "allais"
 CARD_DIR = ROOT / "docs" / "assets" / "cards"
 BG_DIR = ROOT / "docs" / "assets" / "backgrounds"
+WASTELAND_DIR = ROOT / "docs" / "assets" / "sprites" / "wasteland"
 
 # ---------------------------------------------------------------------------
 # Palette — a limited, shared set. Sprites use one outline colour and at most
@@ -124,6 +125,15 @@ RED_H = (255, 120, 102, 255)
 SILVER_D = (111, 122, 130, 255)
 SILVER = (185, 194, 201, 255)
 SILVER_L = (226, 232, 236, 255)
+
+# Wasteland Odds additions: Securitron screen phosphor and the cap colours.
+SCREEN_D = (16, 46, 20, 255)
+SCREEN = (40, 120, 44, 255)
+SCREEN_L = (150, 255, 140, 255)
+SUNSET_D = (176, 120, 30, 255)
+SUNSET = (240, 190, 60, 255)
+STAR_BLUE = (77, 163, 255, 255)
+CHIP_W = (232, 226, 210, 255)
 
 # Scene-only tones (opaque RGB; scenes have no alpha channel).
 S_SKY = [
@@ -562,6 +572,201 @@ def sprite_icon_caps() -> Image.Image:
 
 
 # ---------------------------------------------------------------------------
+# Wasteland Odds sprites (32 x 32): Victor, Festus, the cap barrel and the
+# two faces of a Lucky 38 chip. Same palette family, same 1 px INK outline.
+# ---------------------------------------------------------------------------
+
+def disc(im, cx, cy, r, colour, n=40):
+    poly(im, [(cx + math.cos(2 * math.pi * i / n) * r,
+               cy + math.sin(2 * math.pi * i / n) * r) for i in range(n)],
+         colour)
+
+
+def sprite_victor() -> Image.Image:
+    """Securitron: a monitor head with a cowboy face, arms, one wheel."""
+    im = new_sprite()
+
+    # Wheel base.
+    disc(im, 15.5, 27.0, 4.2, CHAR_D)
+    disc(im, 15.5, 27.0, 2.4, STEEL_D)
+    px(im, 15, 26, STEEL_L)
+    rect(im, 11, 23, 20, 24, CHAR)
+
+    # Torso and shoulder plate.
+    rect(im, 10, 15, 21, 22, CHAR)
+    line(im, [(10, 15), (21, 15)], STEEL_D)
+    rect(im, 12, 17, 19, 21, STEEL_D)
+    line(im, [(12, 17), (19, 17)], STEEL)
+    px(im, 13, 19, BRASS_L)
+    px(im, 18, 19, BRASS_L)
+
+    # Arms with blocky gun-hands.
+    rect(im, 6, 16, 9, 21, STEEL_D)
+    rect(im, 22, 16, 25, 21, STEEL_D)
+    line(im, [(6, 16), (9, 16)], STEEL)
+    line(im, [(22, 16), (25, 16)], STEEL)
+    rect(im, 6, 22, 8, 24, CHAR)
+    rect(im, 23, 22, 25, 24, CHAR)
+
+    # Monitor head: dark bezel, green phosphor screen.
+    rect(im, 7, 1, 24, 14, CHAR)
+    line(im, [(7, 1), (24, 1)], STEEL_D)
+    rect(im, 9, 3, 22, 12, SCREEN_D)
+    for y in range(3, 13, 2):                    # scanlines
+        line(im, [(9, y), (22, y)], (20, 58, 24, 255))
+
+    # Victor's face: hat, eyes, grin — drawn in bright phosphor.
+    rect(im, 13, 3, 18, 5, SCREEN)               # hat crown
+    line(im, [(10, 6), (21, 6)], SCREEN_L)       # hat brim
+    rect(im, 12, 8, 13, 8, SCREEN_L)             # eyes
+    rect(im, 18, 8, 19, 8, SCREEN_L)
+    line(im, [(12, 10), (19, 10)], SCREEN_L)     # grin
+    px(im, 11, 9, SCREEN_L)
+    px(im, 20, 9, SCREEN_L)
+
+    return outline(im)
+
+
+def sprite_festus() -> Image.Image:
+    """Festus, the animatronic cowboy: hat, tin face, moustache, star badge."""
+    im = new_sprite()
+
+    # Shoulders, vest and shirt.
+    rect(im, 7, 19, 24, 30, CANVAS)
+    rect(im, 7, 19, 11, 30, LEATHER)
+    rect(im, 20, 19, 24, 30, LEATHER)
+    line(im, [(11, 19), (11, 30)], LEATHER_D)
+    line(im, [(20, 19), (20, 30)], LEATHER_D)
+    star(im, 22.0, 23.5, 2.6, 1.1, BRASS_L, points=5)
+
+    # Red bandana.
+    rect(im, 11, 17, 20, 19, RED)
+    poly(im, [(14, 19), (17, 19), (15.5, 22)], RED)
+    line(im, [(11, 17), (20, 17)], RED_H)
+
+    # Tin face with rivets and a jointed jaw.
+    rect(im, 10, 8, 21, 16, SILVER)
+    line(im, [(10, 8), (10, 16)], SILVER_L)
+    line(im, [(21, 8), (21, 16)], SILVER_D)
+    line(im, [(11, 14), (20, 14)], SILVER_D)     # jaw seam
+    px(im, 11, 9, SILVER_D)
+    px(im, 20, 9, SILVER_D)
+    rect(im, 12, 10, 13, 11, INK)                # eyes
+    rect(im, 18, 10, 19, 11, INK)
+    px(im, 12, 10, BRASS_L)
+    px(im, 18, 10, BRASS_L)
+    rect(im, 12, 12, 19, 13, WOOD_D)             # moustache
+    px(im, 11, 13, WOOD_D)
+    px(im, 20, 13, WOOD_D)
+
+    # Ten-gallon hat.
+    rect(im, 11, 2, 20, 7, LEATHER)
+    line(im, [(11, 2), (20, 2)], LEATHER_L)
+    line(im, [(15, 2), (16, 2)], LEATHER_D)      # crown dent
+    rect(im, 11, 6, 20, 6, LEATHER_D)            # hat band
+    rect(im, 5, 7, 26, 8, LEATHER_L)             # brim
+    line(im, [(5, 8), (26, 8)], LEATHER_D)
+    px(im, 5, 6, LEATHER_L)
+    px(im, 26, 6, LEATHER_L)
+
+    return outline(im)
+
+
+def sprite_cap_barrel() -> Image.Image:
+    """A rusty barrel brimming with Nuka-Cola, Sunset and star caps."""
+    im = new_sprite()
+
+    # Barrel body with two steel bands.
+    rect(im, 8, 12, 23, 29, RUST)
+    rect(im, 7, 14, 24, 27, RUST)
+    line(im, [(9, 13), (9, 28)], RUST_L)
+    line(im, [(22, 13), (22, 28)], RUST_D)
+    line(im, [(15, 13), (15, 28)], RUST_D)
+    for y in (16, 25):
+        rect(im, 7, y, 24, y + 1, STEEL_D)
+        line(im, [(7, y), (24, y)], STEEL)
+
+    # Rim and the pile of caps.
+    rect(im, 7, 10, 24, 12, STEEL_D)
+    line(im, [(8, 10), (23, 10)], STEEL_L)
+    caps = [
+        (9, 8, RED), (12, 6, SUNSET), (15, 8, RED), (18, 6, SUNSET),
+        (21, 8, SUNSET), (11, 9, SUNSET), (14, 5, RED), (17, 9, RED),
+        (20, 9, SUNSET), (16, 3, SUNSET),
+    ]
+    for x, y, colour in caps:
+        rect(im, x, y, x + 2, y + 1, colour)
+        px(im, x, y, RED_H if colour == RED else BRASS_L)
+    # One star cap on top of the pile.
+    rect(im, 15, 3, 17, 4, SUNSET)
+    px(im, 16, 3, STAR_BLUE)
+    px(im, 16, 4, STAR_BLUE)
+    px(im, 15, 4, STAR_BLUE)
+    px(im, 17, 4, STAR_BLUE)
+
+    return outline(im)
+
+
+def chip_base(im):
+    """Lucky 38 chip: red/white edge spots around a dark felt centre."""
+    cx, cy = 15.5, 15.5
+    disc(im, cx, cy, 13.0, RED)
+    for i in range(8):
+        a0 = 2 * math.pi * i / 8 + math.pi / 16
+        a1 = a0 + math.pi / 8
+        poly(im, [(cx + math.cos(a0) * 13.0, cy + math.sin(a0) * 13.0),
+                  (cx + math.cos(a1) * 13.0, cy + math.sin(a1) * 13.0),
+                  (cx + math.cos(a1) * 9.8, cy + math.sin(a1) * 9.8),
+                  (cx + math.cos(a0) * 9.8, cy + math.sin(a0) * 9.8)],
+             CHIP_W)
+    disc(im, cx, cy, 9.6, RUST_D)
+    disc(im, cx, cy, 8.6, CHAR)
+    ImageDraw.Draw(im).arc([cx - 12, cy - 12, cx + 12, cy + 12], 190, 260,
+                           fill=RED_H)
+    return cx, cy
+
+
+def sprite_chip_heads() -> Image.Image:
+    """Heads: the Lucky 38 tower in brass."""
+    im = new_sprite()
+    chip_base(im)
+    rect(im, 15, 8, 16, 23, BRASS)               # spire
+    line(im, [(15, 8), (15, 23)], BRASS_L)
+    rect(im, 11, 10, 20, 11, BRASS)              # the saucer top
+    line(im, [(12, 9), (19, 9)], BRASS_L)
+    line(im, [(12, 12), (19, 12)], BRASS_D)
+    px(im, 15, 6, RED_H)                         # beacon
+    px(im, 16, 7, BRASS_L)
+    rect(im, 13, 21, 18, 23, BRASS_D)            # base
+    line(im, [(13, 21), (18, 21)], BRASS)
+    return outline(im)
+
+
+def sprite_chip_tails() -> Image.Image:
+    """Tails: a lucky horseshoe in brass, open end up to hold the luck."""
+    im = new_sprite()
+    chip_base(im)
+    rect(im, 10, 9, 12, 17, BRASS)               # left leg
+    rect(im, 19, 9, 21, 17, BRASS)               # right leg
+    ImageDraw.Draw(im).arc([10, 11, 21, 22], 0, 180, fill=BRASS, width=3)
+    px(im, 9, 9, BRASS)                          # flared tips
+    px(im, 22, 9, BRASS)
+    line(im, [(10, 10), (10, 16)], BRASS_L)
+    for x, y in ((11, 11), (20, 11), (11, 14), (20, 14)):
+        px(im, x, y, BRASS_D)                    # nail holes
+    return outline(im)
+
+
+WASTELAND_SPRITES = {
+    "victor": sprite_victor,
+    "festus": sprite_festus,
+    "cap_barrel": sprite_cap_barrel,
+    "chip_heads": sprite_chip_heads,
+    "chip_tails": sprite_chip_tails,
+}
+
+
+# ---------------------------------------------------------------------------
 # Scene toolkit (320 x 180 pixel canvas, enlarged with NEAREST)
 # ---------------------------------------------------------------------------
 
@@ -801,6 +1006,123 @@ def card_scene() -> Image.Image:
     return vignette(im, strength=120, start=0.46, end=1.06)
 
 
+def strip_scene() -> Image.Image:
+    """320 x 180: the New Vegas Strip at night, the Lucky 38 in the middle."""
+    im = Image.new("RGB", (320, 180), (12, 10, 28))
+    night = [(8, 8, 22), (14, 12, 34), (26, 18, 48), (48, 26, 58), (86, 38, 60)]
+    gradient(im, 0, 124, night)
+    d = ImageDraw.Draw(im)
+
+    # Stars: a fixed linear-congruential scatter, so the output never changes.
+    seed = 1338
+    for _ in range(70):
+        seed = (seed * 1103515245 + 12345) % (2 ** 31)
+        x = seed % 320
+        seed = (seed * 1103515245 + 12345) % (2 ** 31)
+        y = seed % 70
+        d.point((x, y), fill=(150, 150, 190) if x % 3 else (210, 210, 240))
+
+    # Far mountains.
+    d.polygon([(0, 112), (40, 100), (86, 108), (130, 96), (180, 106),
+               (232, 98), (280, 108), (320, 102), (320, 180), (0, 180)],
+              fill=(30, 20, 40))
+
+    def block(x0, x1, top, body, lit, sign=None):
+        d.rectangle([x0, top, x1, 150], fill=body)
+        for wy in range(top + 4, 146, 5):
+            for wx in range(x0 + 3, x1 - 2, 4):
+                if (wx * 7 + wy * 3) % 5:
+                    d.point((wx, wy), fill=lit)
+        if sign:
+            d.rectangle([x0 + 2, top - 5, x1 - 2, top - 2], fill=sign)
+
+    # Casino blocks either side, with neon signs (no lettering).
+    block(6, 44, 98, (26, 22, 36), (150, 120, 70), (220, 60, 60))
+    block(48, 92, 84, (32, 26, 44), (170, 150, 90), (60, 210, 120))
+    block(96, 128, 106, (24, 20, 34), (140, 110, 70), (240, 170, 50))
+    block(192, 226, 102, (24, 20, 34), (140, 110, 70), (230, 80, 160))
+    block(230, 272, 88, (32, 26, 44), (170, 150, 90), (240, 170, 50))
+    block(276, 316, 100, (26, 22, 36), (150, 120, 70), (60, 200, 220))
+
+    # The Lucky 38: shaft, ring of lit windows, saucer top, spire, beacon.
+    cx = 160
+    d.rectangle([cx - 10, 52, cx + 10, 150], fill=(44, 40, 52))
+    d.rectangle([cx - 10, 52, cx - 7, 150], fill=(70, 64, 80))
+    for wy in range(58, 148, 4):
+        for wx in range(cx - 6, cx + 8, 3):
+            if (wx + wy) % 7:
+                d.point((wx, wy), fill=(220, 190, 110))
+    d.polygon([(cx - 30, 44), (cx + 30, 44), (cx + 22, 52), (cx - 22, 52)],
+              fill=(70, 64, 80))
+    d.rectangle([cx - 30, 42, cx + 30, 44], fill=(110, 100, 120))
+    for wx in range(cx - 26, cx + 27, 4):
+        d.point((wx, 48), fill=(250, 210, 120))
+    d.polygon([(cx - 14, 42), (cx + 14, 42), (cx + 8, 36), (cx - 8, 36)],
+              fill=(56, 50, 66))
+    d.line([(cx, 36), (cx, 12)], fill=(110, 100, 120), width=2)
+    d.rectangle([cx - 1, 9, cx + 1, 11], fill=(255, 70, 60))
+
+    # A neon glow around the base of the Strip.
+    atmospheric_haze(im, 112, 156, (200, 90, 120), 40)
+
+    # The boulevard, with lane dashes towards the tower.
+    d = ImageDraw.Draw(im)
+    d.rectangle([0, 150, 320, 180], fill=S_ROAD[0])
+    d.polygon([(110, 180), (210, 180), (168, 150), (152, 150)], fill=S_ROAD[1])
+    for y in (154, 160, 168, 177):
+        d.line([(cx, y), (cx, y + 2)], fill=(200, 180, 110))
+
+    return vignette(im, strength=140)
+
+
+def sunset_hq_scene() -> Image.Image:
+    """320 x 180: Sunset Sarsaparilla HQ at dusk, with its round sun sign."""
+    im = Image.new("RGB", (320, 180), S_SKY[2])
+    gradient(im, 0, 112, S_SKY)
+    d = ImageDraw.Draw(im)
+
+    # Far mesas and the desert floor.
+    d.polygon([(0, 100), (44, 92), (90, 98), (140, 90), (196, 98),
+               (250, 92), (320, 100), (320, 180), (0, 180)], fill=(78, 55, 52))
+    d.rectangle([0, 112, 320, 180], fill=S_SAND[0])
+    d.polygon([(0, 124), (120, 118), (240, 124), (320, 120), (320, 180),
+               (0, 180)], fill=S_SAND[1])
+
+    # The headquarters: a long, low building with a dark window band.
+    d.rectangle([70, 96, 270, 146], fill=(196, 170, 128))
+    d.rectangle([70, 96, 270, 100], fill=(150, 64, 48))
+    d.rectangle([78, 108, 262, 120], fill=(46, 40, 44))
+    for wx in range(84, 260, 12):
+        d.rectangle([wx, 110, wx + 7, 118], fill=(214, 150, 80))
+    d.rectangle([156, 124, 184, 146], fill=(60, 44, 40))
+    d.rectangle([158, 126, 168, 146], fill=(110, 70, 52))
+    d.rectangle([172, 126, 182, 146], fill=(110, 70, 52))
+    d.line([(70, 146), (270, 146)], fill=(120, 96, 70))
+
+    # A giant sarsaparilla bottle on the roof.
+    d.rectangle([96, 64, 110, 96], fill=(92, 52, 34))
+    d.rectangle([100, 52, 106, 64], fill=(92, 52, 34))
+    d.rectangle([99, 49, 107, 52], fill=(210, 170, 70))
+    d.rectangle([96, 74, 110, 84], fill=(232, 190, 80))
+    d.line([(98, 66), (98, 94)], fill=(140, 86, 56))
+
+    # The round sun sign on its mast: a half sun with rays, no lettering.
+    cx, cy, r = 214, 44, 26
+    d.rectangle([212, 70, 216, 96], fill=(70, 60, 60))
+    d.ellipse([cx - r - 3, cy - r - 3, cx + r + 3, cy + r + 3], fill=(60, 40, 40))
+    d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(196, 72, 48))
+    d.ellipse([cx - r + 4, cy - r + 4, cx + r - 4, cy + r - 4], fill=(232, 120, 60))
+    for i in range(9):
+        ang = math.pi + i * math.pi / 8
+        d.line([(cx, cy + 6), (cx + math.cos(ang) * (r - 6), cy + 6 + math.sin(ang) * (r - 6))],
+               fill=(250, 196, 90), width=2)
+    d.pieslice([cx - 12, cy - 6, cx + 12, cy + 18], 180, 360, fill=(255, 214, 110))
+    d.rectangle([cx - r + 4, cy + 8, cx + r - 4, cy + 14], fill=(150, 46, 40))
+
+    atmospheric_haze(im, 86, 122, (224, 177, 121), 46)
+    return vignette(im, strength=140)
+
+
 def background_scene() -> Image.Image:
     """320 x 180: caravan halt at dusk, broken highway, raider watchtower."""
     im = Image.new("RGB", (320, 180), S_SKY[2])
@@ -927,12 +1249,11 @@ def verify() -> list[str]:
     """Fail loudly on the wrong size, mode, alpha or file weight."""
     problems: list[str] = []
     print("verification:")
-    sprites = (
+    sprites = [SPRITE_DIR / f"{name}.png" for name in (
         "chest_a", "chest_b", "chest_c", "chest_d",
         "trader", "raider", "icon_caps",
-    )
-    for name in sprites:
-        path = SPRITE_DIR / f"{name}.png"
+    )] + [WASTELAND_DIR / f"{name}.png" for name in WASTELAND_SPRITES]
+    for path in sprites:
         with Image.open(path) as im:
             if im.size != (32, 32):
                 problems.append(f"{path.name}: {im.size} != (32, 32)")
@@ -972,6 +1293,17 @@ def verify() -> list[str]:
               f"sha256:{sha16(bg)}")
     if bg.stat().st_size > 400 * 1024:
         problems.append(f"allais_bg.png: {bg.stat().st_size} B > 400 KB")
+
+    for name in ("strip_bg.png", "sunset_bg.png"):
+        extra = BG_DIR / name
+        with Image.open(extra) as im:
+            if im.size != (1280, 720):
+                problems.append(f"{name}: {im.size} != (1280, 720)")
+            print(f"  {name:<14} {im.size[0]}x{im.size[1]} {im.mode} "
+                  f"opaque          {extra.stat().st_size:>5} B  "
+                  f"sha256:{sha16(extra)}")
+        if extra.stat().st_size > 400 * 1024:
+            problems.append(f"{name}: {extra.stat().st_size} B > 400 KB")
     return problems
 
 
@@ -994,6 +1326,12 @@ def main() -> None:
         save_png(builder(), path)
         print(f"wrote {path.relative_to(ROOT)} ({path.stat().st_size} B)")
 
+    WASTELAND_DIR.mkdir(parents=True, exist_ok=True)
+    for name, builder in WASTELAND_SPRITES.items():
+        path = WASTELAND_DIR / f"{name}.png"
+        save_png(builder(), path)
+        print(f"wrote {path.relative_to(ROOT)} ({path.stat().st_size} B)")
+
     card = CARD_DIR / "hub_allais.png"
     save_png(upscale(card_scene(), 2), card)
     print(f"wrote {card.relative_to(ROOT)} ({card.stat().st_size} B)")
@@ -1002,11 +1340,19 @@ def main() -> None:
     save_png(upscale(background_scene(), 4), bg)
     print(f"wrote {bg.relative_to(ROOT)} ({bg.stat().st_size} B)")
 
+    strip = BG_DIR / "strip_bg.png"
+    save_png(upscale(strip_scene(), 4), strip)
+    print(f"wrote {strip.relative_to(ROOT)} ({strip.stat().st_size} B)")
+
+    sunset = BG_DIR / "sunset_bg.png"
+    save_png(upscale(sunset_hq_scene(), 4), sunset)
+    print(f"wrote {sunset.relative_to(ROOT)} ({sunset.stat().st_size} B)")
+
     problems = verify()
     if problems:
         raise SystemExit("make_sprites: verification FAILED\n  - " +
                          "\n  - ".join(problems))
-    print("verified: 7 sprites 32x32 RGBA with alpha; card 640x360 RGB; "
+    print(f"verified: {7 + len(WASTELAND_SPRITES)} sprites 32x32 RGBA with alpha; card 640x360 RGB; "
           "background 1280x720 RGB; all size caps satisfied")
 
 
