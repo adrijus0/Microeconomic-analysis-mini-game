@@ -6,10 +6,11 @@ Anyone (human or agent) should be able to resume from this file alone. Update it
 
 ## Status
 
-- **Current phase:** Phase 2 (engine + The Caravan Lockboxes) **complete and committed locally**.
-- **Next step:** 🛑 **waiting for explicit go-ahead for Phase 3** (Ellsberg, St. Petersburg, Framing). Do not start it.
-- **Do not:** touch `Microeconomic_analysis__Copy_/` (the LaTeX sources), push to any remote, or change repository settings. Ask before changing `CONFIG.siteUrl` or any repo setting.
-- **Open the result:** double-click `docs/index.html` → **🎮 Games** (`docs/play.html`) → **The Caravan Lockboxes**, or open `docs/play.html#allais` directly. `?seed=42` repeats the draws and simulation; `?fast=1` skips the 20 s interlude. The deck’s web slide 11 (Try-it Allais) opens the same game in its overlay.
+- **Current phase:** Phase 3 (Pip-Boy single-game rework) **complete, reviewed and committed locally**. The site ships **one game only**: The Caravan Lockboxes (Allais / common consequence).
+- **Open the result:** double-click `docs/index.html` → **Enter the game** (`docs/play.html`), or open `docs/play.html#allais` directly. `?seed=42` repeats the two draws; `?fast=1` skips the 20 s interlude. `docs/play.html#report` shows the Report Card.
+- **Archived:** the Phase 1 reveal deck is in `archive/phase1-deck/` outside `docs/` and is not linked from the shipped site. It is history, not a maintained build.
+- **Do not:** touch `Microeconomic_analysis__Copy_/` (the LaTeX sources), push to any remote, rebuild the other three paradox games, or change repository settings. Ask before changing `CONFIG.siteUrl` or any repo setting.
+- **Palette:** the primary green is exactly `#12FF12` (RGB 18/255/18) on the entry screen, game, theory checkpoints, reveal and Report Card. Warning red `#FF3B2F` is reserved for violations/errors.
 
 ## Phase log
 
@@ -128,60 +129,154 @@ config proposal in its report is not authoritative; `docs/config.js` is.
 **Commit:** `Phase 2: engine + The Caravan Lockboxes` (local only, nothing
 pushed). See `git log -1` for the hash.
 
+### Phase 3 — Pip-Boy single-game rework (done, 2026-10-28)
+
+**Scope:** ship one game only (The Caravan Lockboxes / Allais), remove the deck,
+logo, four-game hub and ×1,000 simulation, and restore the slide theory as a
+per-round expected-utility checkpoint.
+
+**Removed / archived:**
+
+- `archive/phase1-deck/` now holds `deck.html`, `deck.css`, `deck.js`,
+  `tryit.js`, `vendor/reveal/`, `vendor/qrcode/`, `assets/ui/mif.png` and the
+  two Phase 1 plot SVGs. Nothing in `docs/` links to them. The LaTeX sources
+  were not touched.
+- `docs/js/charts.js` deleted; `simulations` removed from `docs/config.js`;
+  histogram/running-average/mean/SD/P(worst) UI and code removed.
+- Three coming-soon games (`#stp`, `#ellsberg`, `#framing`), the hub card grid,
+  the university logo and the authors/supervisor block removed.
+- `docs/js/tryit.js`, reveal.js and qrcode-generator are no longer shipped.
+
+**Shipped:**
+
+| File | Role |
+|---|---|
+| `docs/index.html` | one green CRT terminal, one **Enter the game** action, no logo/authors |
+| `docs/play.html` | single-game mount + Report Card; no hub or coming-soon views |
+| `docs/js/engine.js` | scene → choice → lock → resolve → **theory checkpoint** → interlude → reveal |
+| `docs/js/games/allais.js` | `verdict()` plus new `checkpoint(round, choice, game)` derived from the lotteries |
+| `docs/js/hub.js` | Report Card only; empty state points at the one game |
+| `docs/js/play.js` | bare and `#allais` both mount the game; `#report` remains; unknown hashes fall back to the game |
+| `docs/config.js` | one game; no `simulations`, logo, deck metadata or other games |
+| `docs/css/theme.css`, `games.css`, `games/allais.css` | `#12FF12` CRT palette, scanlines, phosphor glow, monospace/pixel type |
+| `docs/js/figures.js` | same triangle geometry, recoloured green; A–B solid, D–C dashed |
+| `tools/check_assets.py` | checks the nine remaining PNGs; no Phase 1 figures |
+
+**Theory flow, per contract:** the player sees the chosen option vs the
+alternative, the lottery-derived inequality (`A≻B ⇔ 0.34u(2400) > 0.33u(2500)`,
+etc.) rendered with KaTeX, and one sentence beginning “Under expected utility,
+this choice means …”. There is no mean, SD, P(worst), histogram or simulated
+data. The seeded single draw and `?seed=42` remain.
+
+**Browser self-checks (coordinator):** 375 and 1280; landing/game/checkpoint/
+reveal/report; no horizontal page scroll; 0 `.katex-error`; formulas fit
+277/277 px at 375 (checkpoint) and 262/262 px (dynamic algebra); interlude
+20 → 13 s ticks and `?fast=1` skips it; keyboard `1`/`2`/`Enter` completes both
+contracts; A+C and B+D show `⊥`, A+D does not; triangle SVG uses only
+`#12FF12`, `#8CFF8C` and `#0B7A0B`; missing-art fallback logs one warning;
+all requests are `file://`; no console/page errors.
+
+**Automated checks:** `node tools/test_allais_verdicts.mjs` → **119/119**
+(all four patterns, lotteries, inequalities, benchmark, renamed ids and 30
+checkpoint checks); `python3 tools/check_assets.py` → exit 0 with **9/9
+assets**.
+
+**Reviews:** fresh theory/content and Pip-Boy/layout reviews were run after the
+rework (reports in `notes/phase3/`). Fixes after review: corrected the landing
+copy (two draws, full pattern only after both locks), removed “Allais” from the
+page metadata, hid the header Report link and gated a mid-run Report so a saved
+card cannot leak the previous run, neutralised the Round 1 checkpoint hint,
+fixed the primary link-button contrast (`#021002` on `#12FF12`), repaired the
+triangle x-axis arrowhead, moved meaningful small labels from dim to secondary
+green, and removed the unused P(worst) field. Commit `Phase 3: Pip-Boy
+single-game rework` (local only, nothing pushed).
+
 ## Decisions made so far
 
 All in `PLAN.md` §0 (D1–D10). The ones likely to be revisited:
 
 1. **16:9 at 1280 × 720**, though the source is 4:3 (128 × 96 mm). **Important correction to the plan's rationale:** at 1 cm = 100 px the web canvas is 12.8 × 7.2 cm — same scale and same absolute width, but **25 % less vertical room** than the source. 16:9 gives more width relative to height, not more absolute width. Several frames therefore auto-fit (0.93–0.98); frame 5 is 26.04 px. See `CONVERSION_NOTES.md` §1. If the team wants larger type, a taller canvas / smaller source scale is the lever, not a different column width.
-2. **Four games** — Allais, Ellsberg, St. Petersburg, Framing — skinned as Fallout, Cyberpunk 2077, Witcher 3, Skyrim. Numbers stay the slides'.
+2. **One game only (Phase 3).** The Caravan Lockboxes (Allais / common consequence). The other three paradoxes are not built; the four-game hub and their coming-soon routes were removed.
 3. **Allais first** (Phase 2), **Ellsberg second**.
 4. **Original pixel art**, every sprite replaceable via `config.js`; manifest `ASSETS.md`.
-5. **Four "Try it" slides** before frames 8, 10, 17, 19, plus the QR slide **after References** → **35 web slides** (36 if References paginates to 3).
+5. **The Phase 1 deck is archived, not shipped.** `archive/phase1-deck/` keeps `deck.html`, deck CSS/JS, reveal.js, qrcode, the logo and the two Phase 1 plot SVGs. No page in `docs/` links to it.
 6. **References split 6 + 6**, author–year.
 7. **No speaker notes** in Phase 1 (source has none).
 8. Git initialised locally, one commit per phase, nothing pushed.
 9. **UI language English**, title string "Paradoxes of Choices under Uncertainty", supervisor "Assoc. Prof. Dmitrij Celov".
 10. **Frame 13 typo fixed** (`\chi` → `\mathcal{X}`), logged in `CONVERSION_NOTES.md`.
-11. **No external requests**: reveal.js/KaTeX/QR/pixel font vendored; the Try-it iframe loads `play.html#<id>` and every route has a real panel (Phase 2 replaced the placeholder).
+11. **No external requests**: KaTeX and the pixel font are vendored; the game is a classic-script page with no fetch, no modules and no deck iframe.
 12. **Allais display currency is caps at ×1/1000.** The slides say “2,400k gp”; the game shows `2,400 caps`. Same digits, deliberate display rescale; contradiction-invariant. Logged in `CONVERSION_NOTES.md` §8.
 13. **Interlude:** 20 s default, visible countdown, Continue enabled immediately (non-blocking), `?fast=1` skips it for demos; no invented choices.
 14. **B+D copy is truthful, not the task prompt’s “higher-EV every time”.** B 2,409 > A 2,400 but D 816 < C 825, so B+C is the EV-maximising pair; B+D is still a mirror violation. The UI says B is higher-EV in Round 1 and D lower-EV in Round 2; both choices impose opposite inequalities. The verdict table is unchanged.
 15. **Allais does not measure a certainty equivalent or CRRA.** The Report Card says “Not measured in this game” for both.
-16. **Original art only.** G2 generated every PNG; no downloaded or copyrighted game art. Sprites are 32×32 shown at 64/128 px (2×/4×), the cap icon at 32 px.
+16. **Original art only.** G2 generated every PNG; no downloaded or copyrighted game art. Sprites are 32×32 shown at 64/128 px (2×/4×), the cap icon at 32 px. The nine PNGs stay in `docs/assets/`; the desert colours are kept inside green CRT frames.
+17. **Theory checkpoint instead of simulation (Phase 3).** After each seeded draw, `AllaisGame.checkpoint(round, choice, game)` derives the expected-utility inequality from the same lottery algebra as `verdict()`. No histogram, mean, SD, P(worst), “1,000 runs” or `simulations` config remains. The Report Card is still not a CE/CRRA measurement.
+18. **Exact palette token.** `#12FF12` is the primary green on every shipped surface; `#8CFF8C` is secondary text, `#0B7A0B`/`#0A5A0A` are rules/panels, and `#FF3B2F` is reserved for violations and errors. Sprites keep their original colours inside green frames.
 
 ## Open questions for the team
 
-Full list in `PLAN.md` §7. Still open after Phase 1:
+The Phase 1/2 deck questions below are historical; the deck is archived and not
+shipped. Current questions:
 
-- **`siteUrl` / GitHub repo** for the QR code: currently `https://example.github.io/paradoxes-of-choices/` (placeholder). The QR encodes it. Tell us the real URL before Phase 4 (or now) and we change one line in `config.js`.
-- **Phone behaviour of the deck:** the fixed 16:9 canvas scales to 0.293 at 375 px (readable on a laptop/projector, small on a phone). The games will be mobile-first. Is that acceptable, or do you want a separate phone layout for the deck?
-- **Title slide footer:** resolved after the layout re-check — the title slide now shows `1 / 35`, like beamer's infolines; only the `[plain]` Thank-you frame is bare. Confirm you are happy with that, or say if you prefer a clean title slide.
-- **Speaker notes:** still empty by design. Do you want 2–4 bullets per slide authored as new content?
-- **References page count:** the source uses `allowframebreaks` and was never compiled. We split 6 + 6; if the PDF paginates to 3 pages, the web count becomes 36. The footer follows the DOM automatically.
-- **Residual accessibility nits:** focus ring on white is 2.08:1 (accepted), and the Try-it dialog does not trap Tab (`inert` not set). Fix now or in Phase 4 QA?
-- **Phase 3 games:** only Allais is playable; `#ellsberg`, `#stp`, `#framing` are clean “Coming in Phase 3” panels. Confirm the order (Ellsberg, St. Petersburg, Framing) when you give the go-ahead.
-- **Accepted Phase 2 residual nits:** the Report Card’s benchmark row is always labelled “Benchmark (A+C)” (correct but not the player’s pattern); the step bar discloses that there are two contracts (not the A/B–C/D pairing); the B+D “higher/lower EV” wording is tied to the shipped numbers, so any number change needs a copy review; in-memory progress is lost on a full reload when localStorage is blocked (hash navigation keeps it); the Report Card is a clean single card but ~1,000 px tall at 375 (not one screen); the Phase 1 deck overlay Close label wraps at 375; the first formula card has a 2 px internal scroll at 360 px (page itself never scrolls horizontally; 375 is clean).
-- **`siteUrl`** is still the Phase 1 placeholder; do not change it or the QR without approval.
+- **`siteUrl` / GitHub repo:** still the placeholder
+  `https://example.github.io/paradoxes-of-choices/`. Nothing on the shipped game
+  reads it now, but tell us the real URL before adding deployment metadata.
+- **Report Card length at 375 px:** the green card is clean and screenshot-ready
+  on desktop, but ~1,230 px tall at 375 (about two phone screens) because the
+  plain-language explanation is included. Trim the explanation or keep it?
+- **B+D copy is tied to the shipped numbers.** B 2,409 > A 2,400, C 825 > D 816,
+  so B+C is the higher-EV pair and B+D is the mirror violation. Any number change
+  needs a copy review.
+- **localStorage blocked:** the in-memory fallback keeps a completed game and the
+  Report Card for the current page, but a full reload loses it. Accept?
+- **Residual Phase 2/3 nits:** the step bar discloses two contracts (not the
+  A/B–C/D pairing); the benchmark row is labelled “Population benchmark”, not the
+  player’s pattern. Both are accepted unless you want them changed.
+- **Do not rebuild the other paradoxes.** The brief is one game; that was the
+  Phase 3 default and remains the shipped state.
 
 ## Facts that are easy to get wrong (keep)
 
-- **The web deck has 35 slides**, not 29. Order: 1, 2, 3–7, **Try-it StP**, 8, 9, **Try-it Allais**, 10–16, **Try-it Ellsberg**, 17, 18, **Try-it Framing**, 19–28, 29a, 29b, **QR**. Footers run 1–29 and 31–35; only the `[plain]` Thank-you frame (slide 30) has none.
-- **3 `\pause` → 3 fragments:** two on frame 10 (Question 2 inside the gameblock; Typical answers outside) and one on frame 17 (Typical choice). No other frame has a fragment. Both use `fragment--collapse` so hidden content does not reserve space.
-- **0 speaker notes**, **0 `.katex-error`**, **0 console errors**, **0 external requests**, **169 KaTeX nodes**.
-- **The LaTeX source is untouched.** All output is in `docs/`; the conversion log is `CONVERSION_NOTES.md`.
-- **`VUMIF.sty` redefines `blue` as `#02487F`**; the triangle's `gray!70` is **#A6A6A6**; the frame-21 weighting identity line is xcolor `gray` = **#808080**. Do not swap them.
-- **Frame 9 table is `{rr}`** (both columns right-aligned); **frames 17/24/28 are `lccc`/`lcccc`/`lcccccccc`** (first column left, data centred); **frame 28 has no midrule** between p and w(p).
-- **Frame 5 is the only auto-fit below 27 px:** 0.93 × 28 px = **26.04 px**. Frames 3, 6, 9, 10, 17 auto-fit to 0.94–0.98; all other frames are 1.00.
-- **Frame 5 vs frame 6:** `0<α<1` vs `α>0` is a **source inconsistency**; both are preserved. Do not harmonise.
-- **Frame 27** keeps `\sum_{k=1}^{n}1`; it is correct, not a typo.
-- **Frame 15/16 empty block titles** were dropped; `block--untitled` has body only.
-- **Frame 26** is `[plain]`: no `<h2>`, no footer, centred. The **title slide** has a `1 / 35` footer; only frame 26 is bare.
-- **`play.html` is now the real hub + runner**, not a placeholder. Routes: bare = hub, `#allais`, `#stp`, `#ellsberg`, `#framing`, `#report`. The Try-it overlay is a true viewport dialog moved to `<body>`; the iframe is lazy and loads `play.html#allais` at 375×605 in testing.
-- **Phase 2 verdict facts:** Allais A+C **No**, A+D **Yes**, B+C **Yes**, B+D **No**; A+C and B+D are mirror violations. EVs A 2,400 / B 2,409 / C 825 / D 816; P(0) 0 / .01 / .67 / .66. B+C — not B+D — is the higher-EV-every-time pair.
-- **Display caps are ×1/1000 of the slides’ “2,400k gp”**, not a new payoff. The report card’s CE/CRRA fields say “Not measured in this game”.
-- **The static `⊥` card is conditional** (`when:"inconsistent"`), so A+D/B+C do not show it above their “EU representation exists” verdict; the dynamic panel always shows the player’s actual inequalities.
-- **Art:** nine original PNGs (`hub_allais`, `allais_bg`, seven sprites); `check_assets.py` passes 10 assets + 2 figures. Missing art falls back to a labelled box/banner + one `console.warn`.
-- **Tests:** `node tools/test_allais_verdicts.mjs` = **105/105**; `python3 tools/check_assets.py` = exit 0.
-- **Deck unaffected in content:** 35 sections, 0 `.katex-error`, 0 console/page errors after Phase 2; the only deck-shared code change is the triangle aria wording in `figures.js` (visual unchanged).
-- **QR** encodes the placeholder `CONFIG.siteUrl`; margin 32 gives a 4-module quiet zone. It decodes in testing.
-- **`docs/vendor/`** is pinned: reveal.js 4.6.1, KaTeX 0.16.11, qrcode-generator 1.4.4, Press Start 2P. No CDN, no `fetch()`, no ES modules.
+- **The shipped site is one game.** `docs/index.html` → `docs/play.html`; bare
+  `play.html` and `#allais` both mount The Caravan Lockboxes; `#report` is the
+  Report Card. `#stp`, `#ellsberg` and `#framing` no longer exist.
+- **The deck is archived**, not shipped: `archive/phase1-deck/` (outside
+  `docs/`). No `docs/` page links to `deck.html`, the logo or the Phase 1 plots.
+- **The flow is** scene → choice → lock → seeded resolve → **theory checkpoint**
+  → interlude (after r1) → round 2 → reveal. There is **no ×1,000 simulation**,
+  no histogram, no mean/SD/P(worst), no `charts.js`, and no `simulations` config.
+- **Theory checkpoint:** after each draw, the player sees the chosen option vs
+  the other one, the lottery-derived inequality, and “Under expected utility,
+  this choice means …”. The checkpoint strips “Allais” and the paired structure;
+  the paradox name appears only in the reveal after both locks.
+- **Phase 3 verdict facts:** Allais A+C **No**, A+D **Yes**, B+C **Yes**,
+  B+D **No**; A+C and B+D are mirror violations. EVs A 2,400 / B 2,409 /
+  C 825 / D 816; P(0) 0 / .01 / .67 / .66. B+C — not B+D — is the
+  higher-EV-every-time pair.
+- **The static `⊥` card is conditional** (`when:"inconsistent"`), so A+D/B+C do
+  not show it above their “EU representation exists” verdict; the dynamic panel
+  always shows the player’s actual inequalities.
+- **Display caps are ×1/1000 of the slides’ “2,400k gp”**, not a new payoff. The
+  Report Card’s CE/CRRA fields say “Not measured in this game”.
+- **Exact palette:** `#12FF12` primary; `#8CFF8C` secondary text; `#0B7A0B` /
+  `#0A5A0A` rules and panels; `#FF3B2F` only for violations/errors. The triangle
+  uses only the greens and distinguishes A–B (solid) from D–C (dashed).
+- **Art:** nine original PNGs (`hub_allais`, `allais_bg`, seven sprites);
+  `check_assets.py` passes 9 assets. Missing art falls back to a labelled
+  box/banner + one `console.warn`.
+- **Tests:** `node tools/test_allais_verdicts.mjs` = **119/119** (all four
+  patterns, lotteries, inequalities, benchmark, renamed ids and 30 checkpoint
+  checks); `python3 tools/check_assets.py` = exit 0.
+- **`docs/vendor/`** now ships KaTeX 0.16.11 and Press Start 2P only. reveal.js
+  and qrcode-generator moved to the archive. No CDN, no `fetch()`, no ES modules,
+  no external requests.
+
+### Phase 1 historical facts (archived, not shipped)
+
+- The Phase 1 web deck had **35 slides** and 169 KaTeX nodes; the LaTeX source
+  (`Microeconomic_analysis__Copy_/`) was never touched.
+- The archived deck preserves the VU palette, title slide, university logo,
+  Try-it overlays and QR code exactly as they were at commit `58527b9`.
+- `VUMIF.sty` redefined `blue` as `#02487F`; the triangle’s `gray!70` was
+  `#A6A6A6`. Those colours apply **only** to the archived deck, not the game.

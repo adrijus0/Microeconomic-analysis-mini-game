@@ -4,34 +4,51 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark">
-  <title>Paradoxes of Choices under Uncertainty</title>
-  <meta name="description" content="A team presentation and mini-games about paradoxes of choice under uncertainty.">
+  <title>The Caravan Lockboxes — Paradoxes of Choices under Uncertainty</title>
+  <meta name="description" content="A green CRT decision game about choice under uncertainty: two contracts, two seeded draws, and the expected-utility algebra behind your choices.">
   <link rel="stylesheet" href="css/theme.css">
 </head>
-<body class="start-page">
-  <main class="start">
-    <div class="start__inner">
-      <div class="start__logo-card">
-        <img src="assets/ui/mif.png"
-             alt="Vilnius University Faculty of Mathematics and Informatics"
-             width="244" height="244">
+<body class="terminal-page">
+  <a class="skip-link" href="#terminal-main">Skip to the terminal</a>
+
+  <main id="terminal-main" class="terminal">
+    <section class="terminal__frame" aria-labelledby="terminal-title">
+      <header class="terminal__bar">
+        <span class="terminal__bar-label" id="terminal-kicker">Caravan termlink // online</span>
+        <span class="terminal__bar-status">LOCAL</span>
+      </header>
+
+      <div class="terminal__screen">
+        <p class="terminal__boot">&gt; BOOT SEQUENCE ... OK</p>
+
+        <p class="eyebrow" id="terminal-subtitle">Paradoxes of Choices under Uncertainty</p>
+        <h1 class="terminal__title" id="terminal-title">The Caravan Lockboxes</h1>
+        <p class="terminal__lead" id="terminal-lead">
+          A caravan halt. Two sealed contracts. Choose first — the full pattern
+          is revealed only after both are locked.
+        </p>
+
+        <figure class="terminal__art">
+          <img id="terminal-art"
+               src="assets/cards/hub_allais.png"
+               alt="A steel strongbox on a desert road, with a watchtower behind"
+               width="640" height="360">
+          <figcaption class="terminal__art-caption">CARAVAN HALT // DUSK // ROUTE UNVERIFIED</figcaption>
+        </figure>
+
+        <div class="terminal__actions">
+          <a class="term-btn" id="terminal-cta" href="play.html">▶ Enter the game</a>
+        </div>
+
+        <p class="terminal__hint" id="terminal-hint">Two contracts · two seeded draws · offline</p>
+        <p class="terminal__status" id="terminal-status">ONE GAME · TWO CONTRACTS · NO SECOND CHANCES</p>
       </div>
 
-      <h1 class="start__title" id="start-title">Paradoxes of Choices under Uncertainty</h1>
-      <p class="start__subtitle" id="start-subtitle">Microeconomic analysis</p>
-      <p class="start__authors" id="start-authors">Gedas Beržinskas, Adrijus Skuodas, Jokūbas Žitkevičius</p>
-      <p class="start__supervisor" id="start-supervisor">Supervisor: Assoc. Prof. Dmitrij Celov</p>
-
-      <div class="start__actions">
-        <a class="pixel-btn" href="deck.html" aria-label="Open the presentation">▶ Presentation</a>
-        <a class="pixel-btn pixel-btn--light" href="play.html" aria-label="Open the games hub">🎮 Games</a>
-      </div>
-
-      <p class="start__hint">
-        Works offline. In the deck: <kbd>→</kbd> / <kbd>space</kbd> advance,
-        <kbd>S</kbd> speaker view, <kbd>F</kbd> fullscreen.
-      </p>
-    </div>
+      <footer class="terminal__foot">
+        <span>REPORT CARD AVAILABLE AFTER BOTH CONTRACTS</span>
+        <span>NOTHING IS UPLOADED</span>
+      </footer>
+    </section>
   </main>
 
   <script src="config.js"></script>
@@ -40,15 +57,28 @@
       "use strict";
       var c = window.CONFIG;
       if (!c) return;
+      var landing = c.landing || {};
       var set = function (id, value) {
         var el = document.getElementById(id);
         if (el && value) el.textContent = value;
       };
-      set("start-title", c.title);
-      set("start-subtitle", c.subtitle);
-      set("start-authors", (c.authors || []).join(", "));
-      set("start-supervisor", c.supervisor ? "Supervisor: " + c.supervisor : "");
-      if (c.title) document.title = c.title;
+      set("terminal-kicker", landing.kicker);
+      set("terminal-title", landing.title);
+      set("terminal-subtitle", landing.subtitle || c.title);
+      set("terminal-lead", landing.lead);
+      set("terminal-cta", landing.cta);
+      set("terminal-hint", landing.hint);
+      set("terminal-status", landing.status);
+      if (landing.title) document.title = landing.title + " — " + (c.title || "Paradoxes of Choices under Uncertainty");
+
+      var art = document.getElementById("terminal-art");
+      var entry = c.assets && c.assets.hub_allais;
+      if (art && entry) {
+        if (entry.file) art.src = entry.file;
+        if (entry.alt) art.alt = entry.alt;
+        if (entry.w) art.width = entry.w;
+        if (entry.h) art.height = entry.h;
+      }
     })();
   </script>
 </body>

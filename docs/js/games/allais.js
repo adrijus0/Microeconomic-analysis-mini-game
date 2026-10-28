@@ -15,7 +15,8 @@
  *   c2 = k · c1 with k > 0  ->  the same requirement           ->  consistent
  *
  * Public API:
- *   AllaisGame.verdict(choices, game) -> verdict object (see notes/phase2)
+ *   AllaisGame.verdict(choices, game)          -> full verdict object
+ *   AllaisGame.checkpoint(round, choice, game) -> one-round theory checkpoint
  */
 (function (root, factory) {
   "use strict";
@@ -320,18 +321,6 @@
     return round6(ev);
   }
 
-  function pWorstOf(option, worst) {
-    var p = 0;
-    lotteryOf(option).forEach(function (entry) {
-      var probability = Number(entry.p);
-      var x = Number(entry.x);
-      if (isFinite(probability) && isFinite(x) && Math.abs(x - worst) < EPS) {
-        p += probability;
-      }
-    });
-    return round6(p);
-  }
-
   /* ---------------------------------------------------------------- copy */
 
   function plainExplanationFor(kind, data) {
@@ -365,7 +354,7 @@
         data.first +
         " and " +
         data.second +
-        ", the two gambles. " +
+        ", both risky contracts. " +
         data.first +
         " is the higher-EV option in round 1 (" +
         data.firstEv +
@@ -473,10 +462,6 @@
     });
 
     var worst = Math.min.apply(null, outcomes);
-    var pWorst = {};
-    Object.keys(options).forEach(function (id) {
-      pWorst[id] = pWorstOf(options[id], worst);
-    });
 
     function buildRound(round, choice, key) {
       var chosen = optionById(round, choice, key);
@@ -650,10 +635,61 @@
       plainExplanation: explanation,
       utilityNote: utilityNote,
       benchmarkNote: benchmarkNote,
-      ev: ev,
-      pWorst: pWorst
+      ev: ev
     };
   }
 
-  return { verdict: verdict };
+  /*
+   * One-round theory checkpoint, used after a contract is resolved. It applies
+   * exactly the same lottery-derived algebra as verdict(), but only to the two
+   * options in this round. Nothing here reads an option id or a round id.
+   */
+  function checkpoint(round, choice, game) {
+    if (!round || typeof round !== "object") {
+      fail("round config object is required");
+    }
+    if (!game || typeof game !== "object") {
+      fail("game config object is required");
+    }
+
+    var outcomes = collectOutcomes(game);
+    if (!outcomes.length) {
+      fail("game.rounds[].options[].lottery is empty");
+    }
+
+    var key = round.id != null ? round.id : "round";
+    var chosen = optionById(round, choice, key);
+    var other = null;
+    (round.options || []).forEach(function (option) {
+      if (option.id !== chosen.id) other = other || option;
+    });
+    if (!other) {
+      fail(key + " needs two options");
+    }
+
+    var vector = difference(
+      coefficients(chosen, outcomes),
+      coefficients(other, outcomes),
+      outcomes
+    );
+
+    return {
+      round: key,
+      chosen: chosen.id,
+      other: other.id,
+      chosenLabel: chosen.label,
+      otherLabel: other.label,
+      premiseTex: chosen.id + "\\succ " + other.id,
+      equivalenceTex:
+        chosen.id + "\\succ " + other.id + " \\iff " + inequalityTex(vector, outcomes),
+      inequalityTex: inequalityTex(vector, outcomes),
+      inequalityPlain: inequalityPlain(vector, outcomes),
+      sign: signOf(vector, outcomes),
+      vector: vector,
+      chosenOption: chosen,
+      otherOption: other
+    };
+  }
+
+  return { verdict: verdict, checkpoint: checkpoint };
 });

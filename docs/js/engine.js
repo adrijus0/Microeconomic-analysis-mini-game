@@ -2,12 +2,16 @@
  * engine.js — the reusable, data-driven game stage machine.
  *
  * One game = one entry in CONFIG.games. The engine renders:
- *   scene → choice → lock → resolve → simulate (×N) → [interlude] → reveal
+ *   scene → choice → lock → resolve → theory checkpoint → [interlude] → reveal
  * and leaves all game-specific verdict logic to the module named in
- * game.logic (window.AllaisGame for Phase 2).
+ * game.logic (window.AllaisGame).
  *
- * Works from file:// and inside the deck's 375 × 605 Try-it iframe. It never
- * assumes it is the top window. Classic script, no modules, no fetch.
+ * Phase 3 removed the ×1,000 simulation stage. After each seeded draw the
+ * player sees the expected-utility requirement their choice imposes, rendered
+ * with KaTeX, and no statistics.
+ *
+ * Works from file:// and under a GitHub Pages sub-path. Classic script, no
+ * modules, no fetch.
  */
 (function (root) {
   "use strict";
@@ -42,11 +46,6 @@
   function pct(p) {
     var value = Math.round((Number(p) || 0) * 1000) / 10;
     return String(value).replace(/\.0$/, "") + "%";
-  }
-
-  function decimal(value, digits) {
-    var text = (Number(value) || 0).toFixed(digits == null ? 1 : digits);
-    return text.replace(/\.0+$/, "").replace(/(\.\d*?)0+$/, "$1");
   }
 
   function prefersReduced() {
@@ -222,12 +221,9 @@
     var shell = el("div", "game__shell");
 
     var bar = el("div", "game__bar");
-    var back = el("a", "game__back", "← Hub");
-    back.href = "play.html";
     var title = el("span", "game__title", game.title);
     var seed = el("span", "game__seed", "seed " + state.seed);
     seed.title = "Add ?seed=" + state.seed + " to the URL to repeat these draws";
-    bar.appendChild(back);
     bar.appendChild(title);
     bar.appendChild(seed);
     shell.appendChild(bar);
@@ -522,11 +518,11 @@
     var next = el(
       "button",
       "btn btn--primary",
-      "Run " + intText(simCount(state)) + " caravans →"
+      "Read the theory →"
     );
     next.type = "button";
     next.addEventListener("click", function () {
-      startSimulation(state);
+      showCheckpoint(state);
     });
     outcome.appendChild(next);
     panel.appendChild(outcome);
@@ -583,146 +579,136 @@
   }
 
   /* ------------------------------------------------------------------ */
-  /* Simulation                                                         */
+  /* Theory checkpoint (replaces the Phase 2 simulation)                */
   /* ------------------------------------------------------------------ */
 
-  function simCount(state) {
-    return Number(state.game.simulations) || 1000;
-  }
-
-  function makeSamples(state, round, option) {
-    var n = simCount(state);
-    var stream = root.RNG.create(
-      state.seed + "|" + round.id + "|sim|" + option.id
-    );
-    var samples = new Array(n);
-    for (var i = 0; i < n; i += 1) {
-      samples[i] = root.RNG.sample(stream, option.lottery);
-    }
-    return samples;
-  }
-
-  /* The game-wide worst payoff, so P(worst) means the same thing for every
-     option. For Allais it is 0, matching the slides' P(payoff = 0); an option
-     whose own minimum is 2,400 (A) still records 0% of zero-payoff runs. */
-  function gameWorst(state) {
-    var worst = Infinity;
-    (state.game.rounds || []).forEach(function (round) {
-      (round.options || []).forEach(function (option) {
-        (option.lottery || []).forEach(function (part) {
-          if (Number(part.p) > 0) worst = Math.min(worst, Number(part.x));
-        });
-      });
-    });
-    return worst === Infinity ? 0 : worst;
-  }
-
-  function startSimulation(state) {
-    var round = state.game.rounds[state.roundIndex];
-    state.simData = state.simData || {};
-    state.simData[round.id] = {};
+  function roundOption(round, id) {
+    var found = null;
     (round.options || []).forEach(function (option) {
-      state.simData[round.id][option.id] = makeSamples(state, round, option);
+      if (option.id === id) found = option;
     });
-    renderSimulation(state);
+    return found;
   }
 
-  function renderSimulation(state) {
-    state.stage = "simulate";
+  function checkpointFor(state) {
+    var game = state.game;
+    var round = game.rounds[state.roundIndex];
+    var choice = state.choices[round.id];
+    var logic = game.logic ? root[game.logic] : null;
+    if (!logic && root.GAMES) logic = root.GAMES[game.id];
+    if (!logic || typeof logic.checkpoint !== "function") {
+      console.warn("[engine] no checkpoint logic for " + game.id);
+      return null;
+    }
+    try {
+      return logic.checkpoint(round, choice, game);
+    } catch (err) {
+      console.warn("[engine] checkpoint failed:", err);
+      return null;
+    }
+  }
+
+  function showCheckpoint(state) {
+    state.stage = "checkpoint";
     clear(state.stageHost);
     setStep(state, "round-" + state.roundIndex);
 
-    var round = state.game.rounds[state.roundIndex];
-    var n = simCount(state);
-    var worst = gameWorst(state);
-    var panel = el("section", "stage stage--simulate");
-    panel.appendChild(
-      el("p", "eyebrow", "Simulation · " + intText(n) + " runs per contract")
-    );
-    var heading = el("h2", "stage__title", intText(n) + " caravans on each route");
-    panel.appendChild(heading);
+    var game = state.game;
+    var round = game.rounds[state.roundIndex];
+    var data = checkpointFor(state);
+    var chosenId = state.choices[round.id];
+    var chosen = data && data.chosenOption
+      ? data.chosenOption
+      : roundOption(round, chosenId);
+    var otherId = data ? data.other : null;
+    var other = data && data.otherOption
+      ? data.otherOption
+      : roundOption(round, otherId);
+
+    var panel = el("section", "stage stage--checkpoint");
+    panel.setAttribute("data-round", round.id);
     panel.appendChild(
       el(
         "p",
-        "stage__lead",
-        "Every run uses the same odds you just chose between. The bars show how often each payoff appeared; the line is the running average."
+        "eyebrow",
+        ((game.checkpoint && game.checkpoint.kicker) || "Theory checkpoint") +
+          " · " +
+          (round.stepLabel || "Contract")
       )
     );
+    var heading = el("h2", "stage__title", "What this choice implies");
+    panel.appendChild(heading);
 
-    var grid = el("div", "sim-grid");
-    var canvases = [];
-
-    (round.options || []).forEach(function (option) {
-      var samples = state.simData[round.id][option.id];
-      var stats = root.Charts.stats(samples, worst);
-      var card = el(
-        "article",
-        "sim-card" +
-          (option.id === state.choices[round.id] ? " is-pick" : "")
+    if (chosen && other) {
+      var pair = el("div", "checkpoint__pair");
+      var chosenSide = el("div", "checkpoint__side is-chosen");
+      chosenSide.appendChild(
+        el(
+          "span",
+          "checkpoint__side-label",
+          (game.checkpoint && game.checkpoint.chosenLabel) || "Your choice"
+        )
       );
-      card.setAttribute("data-option", option.id);
-
-      var header = el("header", "sim-card__head");
-      header.appendChild(el("span", "sim-card__id", option.id));
-      header.appendChild(el("h3", "sim-card__name", option.label));
-      if (option.id === state.choices[round.id]) {
-        header.appendChild(el("span", "badge", "Your pick"));
-      }
-      card.appendChild(header);
-
-      var hist = el("canvas", "sim-canvas sim-canvas--hist");
-      hist.height = 150;
-      hist.setAttribute("role", "img");
-      var run = el("canvas", "sim-canvas sim-canvas--run");
-      run.height = 76;
-      run.setAttribute("role", "img");
-      card.appendChild(hist);
-      card.appendChild(run);
-
-      var dl = el("dl", "sim-stats");
-      var mean = el("div", "sim-stat");
-      mean.appendChild(el("dt", null, "Mean (1,000)"));
-      mean.appendChild(el("dd", null, caps(Math.round(stats.mean))));
-      dl.appendChild(mean);
-
-      var sd = el("div", "sim-stat");
-      sd.appendChild(el("dt", null, "SD"));
-      sd.appendChild(el("dd", null, decimal(stats.sd, 1) + " caps"));
-      dl.appendChild(sd);
-
-      var pw = el("div", "sim-stat");
-      pw.appendChild(el("dt", null, "P(worst)"));
-      pw.appendChild(
-        el("dd", null, decimal(stats.pWorst * 100, 1) + "%")
+      chosenSide.appendChild(
+        el("strong", "checkpoint__side-name", chosen.id + " — " + chosen.label)
       );
-      dl.appendChild(pw);
+      pair.appendChild(chosenSide);
+      pair.appendChild(el("span", "checkpoint__vs", "≻"));
+      var otherSide = el("div", "checkpoint__side");
+      otherSide.appendChild(
+        el(
+          "span",
+          "checkpoint__side-label",
+          (game.checkpoint && game.checkpoint.otherLabel) || "The alternative"
+        )
+      );
+      otherSide.appendChild(
+        el("strong", "checkpoint__side-name", other.id + " — " + other.label)
+      );
+      pair.appendChild(otherSide);
+      panel.appendChild(pair);
+    }
 
-      card.appendChild(dl);
-      grid.appendChild(card);
-      canvases.push({ option: option, samples: samples, hist: hist, run: run });
-    });
+    if (data) {
+      var formula = el("figure", "checkpoint__formula");
+      var host = el("div", "formula__math");
+      math(host, data.equivalenceTex, true);
+      formula.appendChild(host);
+      var caption = el("figcaption", "formula__caption");
+      caption.appendChild(el("span", "slide-ref", "Slide 11"));
+      caption.appendChild(el("span", null, "u(0) = 0"));
+      formula.appendChild(caption);
+      panel.appendChild(formula);
 
-    panel.appendChild(grid);
+      panel.appendChild(
+        el(
+          "p",
+          "checkpoint__sentence",
+          "Under expected utility, this choice means " +
+            data.inequalityPlain +
+            "."
+        )
+      );
+    } else {
+      panel.appendChild(
+        el(
+          "p",
+          "checkpoint__sentence",
+          "Your choice is locked. The theory panel could not load the algebra; reload the page or check the browser console."
+        )
+      );
+    }
+
     panel.appendChild(
       el(
         "p",
         "hint",
-        "Seed " +
-          state.seed +
-          " · " +
-          intText(n) +
-          " runs each · P(worst) is the share of runs that paid " +
-          caps(worst) +
-          "."
+        "This is the requirement your choice imposes on any utility function. No simulation is run."
       )
     );
 
     var actions = el("div", "stage__actions");
-    var next = el(
-      "button",
-      "btn btn--primary",
-      nextLabel(state)
-    );
+    var next = el("button", "btn btn--primary", nextLabel(state));
     next.type = "button";
     next.addEventListener("click", function () {
       afterRound(state);
@@ -731,57 +717,15 @@
     panel.appendChild(actions);
 
     state.stageHost.appendChild(panel);
-
-    root.requestAnimationFrame(function () {
-      if (state.destroyed) return;
-      canvases.forEach(function (item) {
-        root.Charts.histogram(item.hist, item.samples, {
-          color: optionColor(item.option.id),
-          unit: "caps",
-          label: item.option.id + " payoff histogram"
-        });
-        root.Charts.running(item.run, item.samples, {
-          color: optionColor(item.option.id),
-          unit: "caps",
-          label: item.option.id + " running average"
-        });
-      });
-    });
-    state.redraw = function () {
-      canvases.forEach(function (item) {
-        root.Charts.histogram(item.hist, item.samples, {
-          color: optionColor(item.option.id),
-          unit: "caps",
-          label: item.option.id + " payoff histogram"
-        });
-        root.Charts.running(item.run, item.samples, {
-          color: optionColor(item.option.id),
-          unit: "caps",
-          label: item.option.id + " running average"
-        });
-      });
-    };
-
     setStatus(
       state,
-      "Simulation of " +
-        intText(n) +
-        " runs for each contract. " +
-        nextLabel(state) +
-        " to continue."
+      "Theory checkpoint. " +
+        (data
+          ? data.chosen + " over " + data.other + " requires " + data.inequalityPlain + "."
+          : "Algebra unavailable.")
     );
     focusHeading(state);
     resetScroll(state);
-  }
-
-  function optionColor(id) {
-    var colors = {
-      A: "#7fb3d5",
-      B: "#e0a64b",
-      C: "#d98b6a",
-      D: "#a8c686"
-    };
-    return colors[id] || "#c9b48a";
   }
 
   function nextLabel(state) {
@@ -1005,6 +949,12 @@
 
     panel.appendChild(verdictPanel(verdict));
 
+    if (game.reveal && game.reveal.benchmarkNote) {
+      panel.appendChild(
+        el("p", "reveal__benchmark", game.reveal.benchmarkNote)
+      );
+    }
+
     if (game.reveal && game.reveal.showTriangle && root.Figures) {
       var details = el("details", "triangle");
       details.appendChild(el("summary", "triangle__summary", "The probability triangle (Slide 12)"));
@@ -1022,10 +972,10 @@
     }
 
     var actions = el("div", "stage__actions stage__actions--reveal");
-    var report = el("a", "btn btn--primary", "See your Paradox Report Card");
+    var report = el("a", "btn btn--primary", "See your Report Card");
     report.href = "#report";
-    var hub = el("a", "btn btn--ghost", "Back to hub");
-    hub.href = "play.html";
+    var hub = el("a", "btn btn--ghost", "Back to entry screen");
+    hub.href = "index.html";
     actions.appendChild(report);
     actions.appendChild(hub);
     panel.appendChild(actions);
@@ -1125,9 +1075,6 @@
     if (verdict.utilityNote) {
       panel.appendChild(el("p", "verdict-panel__note", verdict.utilityNote));
     }
-    if (verdict.benchmarkNote) {
-      panel.appendChild(el("p", "verdict-panel__benchmark", verdict.benchmarkNote));
-    }
 
     var algebraWrap = el("details", "verdict-panel__details");
     algebraWrap.appendChild(
@@ -1196,7 +1143,7 @@
       if (state.stage === "scene") {
         event.preventDefault();
         startRound(state, 0);
-      } else if (state.stage === "simulate") {
+      } else if (state.stage === "checkpoint") {
         event.preventDefault();
         afterRound(state);
       } else if (state.stage === "interlude") {
@@ -1229,7 +1176,6 @@
       seed: root.RNG.seedFromUrl(root.location.search) || root.RNG.makeSeed(),
       choices: {},
       draws: {},
-      simData: {},
       roundIndex: 0,
       stage: "scene",
       selected: null,
@@ -1244,12 +1190,6 @@
     buildShell(state);
     buildSteps(state);
     showScene(state);
-
-    state.onResize = function () {
-      if (state.destroyed) return;
-      if (state.stage === "simulate" && state.redraw) state.redraw();
-    };
-    root.addEventListener("resize", state.onResize);
 
     return {
       state: state,
@@ -1267,9 +1207,6 @@
     clearTimers(state);
     if (state.keyHandler) {
       document.removeEventListener("keydown", state.keyHandler);
-    }
-    if (state.onResize) {
-      root.removeEventListener("resize", state.onResize);
     }
     if (state.host) clear(state.host);
     current = null;

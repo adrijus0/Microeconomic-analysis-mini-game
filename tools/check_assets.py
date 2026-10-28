@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """
 check_assets.py — verify that every asset referenced by docs/config.js exists,
-and that PNG dimensions match the declared w/h. Also checks the two committed
-prospect-theory figures.
+and that PNG dimensions match the declared w/h.
+
+Phase 3 archives the deck-only Phase 1 plot SVGs outside docs/, so the shipped
+site has no committed figure files to check.
 
 Run from the repository root (or anywhere):
 
@@ -18,17 +20,11 @@ from __future__ import annotations
 
 import re
 import sys
-import xml.etree.ElementTree as ET
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 DOCS = ROOT / "docs"
 CONFIG = DOCS / "config.js"
-
-FIGURES = (
-    "assets/figures/value-function.svg",
-    "assets/figures/probability-weighting.svg",
-)
 
 try:
     from PIL import Image  # Pillow, available on this machine
@@ -180,50 +176,6 @@ def check_asset(entry: dict, errors: list[str]) -> str:
     return f"OK   {label:<18} {shown}  {actual_w}x{actual_h} {mode}{expected}"
 
 
-def check_figure(rel_path: str, errors: list[str]) -> str:
-    target = DOCS / rel_path
-    shown = target.relative_to(ROOT).as_posix()
-    if not target.is_file():
-        msg = f"missing committed figure {shown}"
-        errors.append(msg)
-        return f"FAIL {msg}"
-    if target.stat().st_size == 0:
-        msg = f"empty committed figure {shown}"
-        errors.append(msg)
-        return f"FAIL {msg}"
-    try:
-        root = ET.parse(target).getroot()
-    except ET.ParseError as exc:
-        msg = f"invalid SVG/XML in {shown}: {exc}"
-        errors.append(msg)
-        return f"FAIL {msg}"
-
-    tag = root.tag.split("}")[-1]
-    view_box = root.get("viewBox", "")
-    if tag != "svg" or not view_box:
-        msg = f"{shown} is not an <svg> with a viewBox"
-        errors.append(msg)
-        return f"FAIL {msg}"
-
-    try:
-        parts = view_box.replace(",", " ").split()
-        vw, vh = float(parts[2]), float(parts[3])
-        aspect = vw / vh
-    except (ValueError, IndexError, ZeroDivisionError):
-        msg = f"{shown} has an unreadable viewBox {view_box!r}"
-        errors.append(msg)
-        return f"FAIL {msg}"
-    if abs(aspect - 5.0 / 3.7) > 0.02:
-        msg = f"{shown} aspect {aspect:.3f} is not the source 5.0:3.7 (1.351)"
-        errors.append(msg)
-        return f"FAIL {msg}"
-
-    return (
-        f"OK   {target.name:<18} {shown}  viewBox {view_box.strip()}, "
-        f"aspect {aspect:.3f}, {target.stat().st_size} bytes"
-    )
-
-
 def main() -> int:
     print(f"Checking assets for {ROOT.name}")
     if not CONFIG.is_file():
@@ -241,10 +193,6 @@ def main() -> int:
     for entry in entries:
         print("  " + check_asset(entry, errors))
 
-    print(f"committed figures ({len(FIGURES)}):")
-    for rel_path in FIGURES:
-        print("  " + check_figure(rel_path, errors))
-
     if errors:
         sys.stdout.flush()
         print(f"\n{len(errors)} problem(s):", file=sys.stderr)
@@ -252,7 +200,7 @@ def main() -> int:
             print(f"  - {err}", file=sys.stderr)
         return 1
 
-    print(f"\nAll {len(entries)} asset(s) and {len(FIGURES)} figure(s) OK.")
+    print(f"\nAll {len(entries)} asset(s) OK.")
     return 0
 
 

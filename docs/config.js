@@ -1,43 +1,46 @@
 /*
  * config.js — the single place for anything a teammate may want to change.
  *
- * Loaded as a classic script (no modules, no build step) by index.html,
- * deck.html and play.html. Works from file:// and from GitHub Pages under
- * /<repo>/ because every path below is relative.
+ * Loaded as a classic script (no modules, no build step) by index.html and
+ * play.html. Works from file:// and from GitHub Pages under /<repo>/ because
+ * every path below is relative.
+ *
+ * Phase 3: one game only. The Caravan Lockboxes (Allais / common consequence).
+ * The Phase 1 deck is archived outside docs/ and is not shipped.
  */
 window.CONFIG = {
-  /* Used by the QR code on the last deck slide and by the start screen.
-     PLACEHOLDER until the GitHub user/repo is confirmed. Ask before changing. */
+  /* Kept for future deployment notes. PLACEHOLDER until the GitHub user/repo is
+     confirmed. Ask before changing. Nothing on the shipped game reads it. */
   siteUrl: "https://example.github.io/paradoxes-of-choices/",
 
-  /* Strings shared by the start screen and the title slide. */
+  /* Strings shared by the entry screen and the game shell. */
   title: "Paradoxes of Choices under Uncertainty",
   subtitle: "Microeconomic analysis",
-  authors: [
-    "Gedas Beržinskas",
-    "Adrijus Skuodas",
-    "Jokūbas Žitkevičius"
-  ],
-  supervisor: "Assoc. Prof. Dmitrij Celov",
 
   /* The preamble's user macros (slides.tex L44). Passed to KaTeX as a copy
      on every render because KaTeX mutates the object on \gdef. Only \X is
-     user-defined; everything else the deck uses is native to KaTeX 0.16.11. */
+     user-defined; everything else the game uses is native to KaTeX 0.16.11. */
   katexMacros: {
     "\\X": "\\mathcal{X}"
+  },
+
+  /* The single-game terminal entry screen. No authors, supervisor or logo:
+     this is a game terminal, not a title slide. The paradox name is withheld
+     until both contracts are locked. */
+  landing: {
+    kicker: "Caravan termlink // online",
+    title: "The Caravan Lockboxes",
+    subtitle: "Paradoxes of Choices under Uncertainty",
+    lead: "A caravan halt. Two sealed contracts. Choose first — the full pattern is revealed only after both are locked.",
+    cta: "Enter the game",
+    hint: "Two contracts · two seeded draws · offline",
+    status: "ONE GAME · TWO CONTRACTS · NO SECOND CHANCES"
   },
 
   /* Every image is referred to by key, never by path. Registering a key here
      is enough for the engine to use it; swapping art means editing this entry
      (or replacing the file with the same name). Missing art never crashes. */
   assets: {
-    ui_mif: {
-      file: "assets/ui/mif.png",
-      alt: "Vilnius University Faculty of Mathematics and Informatics",
-      kind: "ui",
-      w: 244,
-      h: 244
-    },
     hub_allais: {
       file: "assets/cards/hub_allais.png",
       alt: "A steel strongbox on a desert road, with a watchtower behind",
@@ -103,8 +106,8 @@ window.CONFIG = {
     }
   },
 
-  /* Hub order. Thematic names only; paradox names appear after the reveal. */
-  gameOrder: ["allais", "ellsberg", "stp", "framing"],
+  /* One game only. Thematic name first; the paradox name appears in the reveal. */
+  gameOrder: ["allais"],
 
   /* Game text, numbers and lotteries. Every probability/payoff comes from
      slides.tex frames 10–16 and 22 (PLAN.md §5.2 A). Allais displays the
@@ -119,7 +122,6 @@ window.CONFIG = {
       paradoxSub: "Common consequence · certainty effect",
       slideRefs: [10, 11, 12, 13, 14, 15, 16, 22],
       logic: "AllaisGame",
-      simulations: 1000,
       card: "hub_allais",
       cardAlt: "A steel strongbox on a desert road",
       benchmark: { r1: 82, r2: 83, source: "Kahneman & Tversky (1979)" },
@@ -217,6 +219,15 @@ window.CONFIG = {
         win: "You count {x}.",
         lose: "Empty. The raiders got there first."
       },
+      /* Per-round theory checkpoint: no simulation or statistical output.
+         allais.js derives the inequality from the chosen lottery. */
+      checkpoint: {
+        stepLabel: "Theory check",
+        kicker: "Theory checkpoint",
+        chosenLabel: "Your choice",
+        otherLabel: "The alternative",
+        cta: "Read the theory"
+      },
       reveal: {
         name: "Allais paradox",
         kicker: "Common consequence · certainty effect",
@@ -262,48 +273,14 @@ window.CONFIG = {
             note: "Prospect theory reproduces the usual pattern."
           }
         ],
+        benchmarkNote:
+          "Population benchmark: 82% chose A and 83% chose C (Kahneman & Tversky, 1979).",
         showTriangle: true,
         triangleCaption:
           "The segments AB and DC are parallel — A and B sit on the left, C and D on the right. Expected-utility indifference lines are parallel, so A≻B and C≻D cannot both hold; the dashed lines would have to fan out.",
         footnote:
-          "Numbers from the deck’s Allais frames; displayed in caps at a ×1/1000 rescale of the slides’ “2,400k gp”."
+          "Numbers from the Allais source frames; displayed in caps at a ×1/1000 rescale of the slides’ “2,400k gp”."
       }
-    },
-
-    ellsberg: {
-      id: "ellsberg",
-      status: "coming",
-      title: "The Fixer's Crate",
-      tagline: "One crate with a known count. One crate with a question mark.",
-      paradox: "Ellsberg paradox",
-      glyph: "▣",
-      comingCopy:
-        "This game is not built yet. The Fixer's Crate will put a known 30/90 mix against an unknown 60-gem split and then show why both of your bets cannot come from one set of beliefs.",
-      proposed: "Planned for Phase 3: two decisions, a 20-second manifest interlude, and a subjective-probability contradiction."
-    },
-
-    stp: {
-      id: "stp",
-      status: "coming",
-      title: "The Doubling Contract",
-      tagline: "A coin that doubles your crowns — until it lands tails.",
-      paradox: "St. Petersburg paradox",
-      glyph: "◉",
-      comingCopy:
-        "This game is not built yet. The Doubling Contract will ask what you would pay to play, then run the coin until the running average and the median tell two different stories.",
-      proposed: "Planned for Phase 3: a price slider and a 10,000-run simulation."
-    },
-
-    framing: {
-      id: "framing",
-      status: "coming",
-      title: "The Jarl's Orders",
-      tagline: "Six hundred citizens, two plans, two ways to word them.",
-      paradox: "Framing effect",
-      glyph: "⚑",
-      comingCopy:
-        "This game is not built yet. The Jarl's Orders will ask the same pair of plans twice under different wording, then show that only the words changed.",
-      proposed: "Planned for Phase 3: two framed decisions and a prospect-theory reveal."
     }
   }
 };

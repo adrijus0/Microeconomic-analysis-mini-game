@@ -1,5 +1,11 @@
 # ASSETS — what art is needed, in what format, and how to swap it
 
+> **Phase 3 status (2026-10-28):** the shipped site is one game, The Caravan
+> Lockboxes. It uses the nine original Allais PNGs below, with no university
+> logo and no deck figures. `assets/ui/mif.png` and the two Phase 1 plot SVGs
+> are archived in `archive/phase1-deck/`. The future-game rows in §3 remain a
+> Phase 0/2 planning list and are **not** part of the current build.
+
 This is the shopping list for the mini-games. **Nothing here has to exist before Phase 2**: the engine renders a labelled coloured placeholder and logs a warning for any missing key, so a game is never broken by absent art. Drop a file in, add one line to `config.js`, reload — no code changes, no build step.
 
 ---
@@ -35,7 +41,7 @@ assets: {
 }
 ```
 
-If you replace a file but keep the name, you change **nothing**. If you rename it, change only the `file` string. If you omit `file`, the engine looks for `assets/<kind>/<key>.png` by convention. One key is pinned: `ui_mif` → `assets/ui/mif.png` (the copied university logo), because its source filename is already fixed.
+If you replace a file but keep the name, you change **nothing**. If you rename it, change only the `file` string. If you omit `file`, the engine looks for `assets/<kind>/<key>.png` by convention.
 
 ### If a key is missing
 
@@ -43,13 +49,12 @@ The engine draws a coloured box with the key's name, logs `console.warn("[assets
 
 ---
 
-## 2. Minimum set to ship the first game (Phase 2)
+## 2. Shipped set (Phase 3)
 
-Ten files, and the game is complete:
+Nine files, and the game is complete:
 
 | Key | Depicts | Kind | Size |
 |---|---|---|---|
-| `ui_mif` | university logo (already exists at `resources/MIF.png`) | ui | 244×244 (copy as-is) |
 | `hub_allais` | hub card: a strongbox on a desert road | card | 640×360 |
 | `allais_bg` | caravan halt at dusk, raider country behind | background | 1280×720 |
 | `allais_chest_a` | sealed steel strongbox, clean | sprite | 32×32 |
@@ -66,13 +71,13 @@ That is enough to ship: the resolve animation needs **no open-state art** — th
 
 ## 3. Full manifest
 
-**Not in this manifest:** the probability triangle is generated in code (`Figures.triangleSVG()` in `docs/js/figures.js`) from the slide coordinates, so it is not an image asset and cannot go missing. The two prospect-theory plots are committed SVG files generated once by `tools/make_figures.py` (they live in `docs/assets/figures/`, not in this art list).
+**Not in this manifest:** the probability triangle is generated in code (`Figures.triangleSVG()` in `docs/js/figures.js`) from the slide coordinates, so it is not an image asset and cannot go missing. The two Phase 1 prospect-theory plots were archived in `archive/phase1-deck/docs/assets/figures/` during Phase 3.
 
 ### Global / UI
 
 | Key | Depicts | Kind | Size | Priority |
 |---|---|---|---|---|
-| `ui_mif` | Vilnius University MIF logo | ui | 244×244, as-is | **required** |
+| `ui_mif` | Vilnius University MIF logo | ui | 244×244, as-is | **archived in Phase 3; not shipped** |
 | `icon_caps` | Fallout-style bottle cap | sprite | 32×32 | **required** (Allais) |
 | `icon_crowns` | Witcher-style gold crown coin | sprite | 32×32 | required (St. Petersburg) |
 | `icon_eddies` | Cyberpunk-style credit chip | sprite | 32×32 | required (Ellsberg) |

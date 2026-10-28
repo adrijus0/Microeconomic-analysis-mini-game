@@ -319,3 +319,95 @@ and keep the engine, hub and router from duplicating the same fallbacks.
 `play.html#stp`, `#ellsberg`, `#framing` = clean “Coming in Phase 3” panels;
 `play.html#report` = Paradox Report Card. The deck’s four Try-it iframes still
 load `play.html#<id>` and the overlay’s ✕ still closes them.
+
+---
+
+## 9. Phase 3 — Pip-Boy single-game rework
+
+**Phase 3, 2026-10-28.** The shipped site is now **one game** (The Caravan
+Lockboxes / Allais) in a green CRT terminal. The Phase 1 deck is archived
+outside `docs/`; the university logo, the other three games and the ×1,000
+simulation are gone. The LaTeX sources were **not** touched.
+
+### 9.1 Removed, archived, replaced
+
+| Removed | Where it went / what replaced it |
+|---|---|
+| `docs/deck.html`, `docs/css/deck.css`, `docs/js/deck.js`, `docs/js/tryit.js` | `archive/phase1-deck/docs/` (moved with history) |
+| `docs/vendor/reveal/`, `docs/vendor/qrcode/` | `archive/phase1-deck/docs/vendor/` |
+| `docs/assets/ui/mif.png` (university logo) | `archive/phase1-deck/docs/assets/ui/` |
+| `docs/assets/figures/value-function.svg`, `probability-weighting.svg` | `archive/phase1-deck/docs/assets/figures/` |
+| `docs/js/charts.js`, the ×1,000 simulation stage, `simulations` config | Deleted. Replaced by a per-round theory checkpoint. |
+| `#stp`, `#ellsberg`, `#framing`, the four-card hub, coming-soon panels | Deleted. Bare `play.html` and `#allais` mount the same game; `#report` remains. |
+| Authors/supervisor/logo block on the start screen | Deleted. The entry screen is one terminal with one **Enter the game** action. |
+
+`docs/vendor/` now ships KaTeX 0.16.11 and Press Start 2P only. The archived deck
+is not a runnable standalone copy: its old `theme.css`, `config.js`, `figures.js`
+and `vendor/katex/` stayed in `docs/` and were rewritten for the game. The last
+complete deck is commit `58527b9`.
+
+### 9.2 New theory flow
+
+Per contract:
+
+1. scene (unchanged caravan halt, 2–3 lines);
+2. choice (sprite, label, lottery numbers, stacked probability bar; no EV);
+3. lock in (no take-backs, `choices[round.id]`);
+4. seeded resolve (single draw; `?seed=42` still reproduces it);
+5. **theory checkpoint** — chosen vs other option, the lottery-derived
+   expected-utility inequality with KaTeX, and one sentence beginning “Under
+   expected utility, this choice means …”;
+6. interlude after Round 1 (20 s, `?fast=1` skips it);
+7. Round 2;
+8. reveal after both locks.
+
+`AllaisGame.checkpoint(round, choice, game)` is new. It reuses the same
+`collectOutcomes` / `coefficients` / `difference` algebra as `verdict()`, so the
+inequality is derived from the lotteries, never pattern-matched. `verdict()` and
+the four-pattern table are unchanged. The checkpoint never says “Allais”; the
+paradox name appears only in the reveal.
+
+No statistical output ships: no histogram, running average, mean, SD, P(worst),
+“1,000 runs”, confidence interval or p-value. A single seeded draw is described
+as a draw, not as an expected value or average.
+
+### 9.3 Palette and presentation
+
+- Primary green **`#12FF12`** (RGB 18/255/18) on the entry screen, game,
+  checkpoints, reveal and Report Card.
+- Secondary text `#8CFF8C`; rules/panels `#0B7A0B` / `#0A5A0A`; near-black
+  green backgrounds. Warning red `#FF3B2F` only for the violation verdict and
+  missing-art/error states.
+- Monospace body, Press Start 2P headings, static scanlines, phosphor glow and
+  a CRT vignette. `prefers-reduced-motion` disables the chest animation and all
+  transitions; scanlines are static, not animated.
+- The nine original PNGs are unchanged. Sprites keep their desert colours inside
+  green CRT frames and still display at integer 2×/4× sizes.
+- The probability triangle keeps the exact frame-12 geometry, but is recoloured
+  to the greens. A–B is a solid bright line and D–C a dashed soft line, so the
+  pairs remain distinguishable without relying on colour.
+- The Report Card is a green terminal readout: pattern, EU verdict, population
+  benchmark, slide refs, and CE/CRRA **“Not measured in this game”**. No CE or
+  CRRA is invented.
+
+### 9.4 Verification
+
+- `node tools/test_allais_verdicts.mjs` → **119/119** (all four patterns,
+  lotteries, inequalities, benchmark, renamed ids and 30 checkpoint checks);
+  order **A+C No, A+D Yes, B+C Yes, B+D No**.
+- `python3 tools/check_assets.py` → **9 assets**, exit 0.
+- Browser checks at 375 and 1280: no horizontal page scroll; 0 `.katex-error`;
+  checkpoint formula 277/277 px at 375; dynamic algebra 262/262 px; keyboard
+  `1`/`2`/`Enter` completes both contracts; A+C/B+D show `⊥`, A+D does not;
+  triangle strokes/fills use only `#12FF12`, `#8CFF8C`, `#0B7A0B`; interlude
+  counts down and `?fast=1` skips it; missing-art fallback logs one warning;
+  every request is `file://`; no console/page errors.
+- Fresh theory/content and Pip-Boy/layout reviews were run after the build
+  (reports in `notes/phase3/`). Review fixes: landing copy (two draws, full
+  pattern only after both locks), no “Allais” in page metadata, header Report
+  link removed and mid-run Report gated, Round 1 checkpoint hint neutralised,
+  primary link-button contrast fixed, triangle x-axis arrowhead repaired,
+  meaningful small labels moved to secondary green, unused P(worst) removed.
+
+**No push.** The Phase 3 commit is local only. `CONFIG.siteUrl` is still the
+placeholder and no repo setting was changed.

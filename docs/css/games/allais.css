@@ -1,19 +1,21 @@
 /*
- * allais.css — Fallout-ish colour tokens for "The Caravan Lockboxes".
+ * allais.css — Pip-Boy scoped tokens for "The Caravan Lockboxes".
  *
- * Tokens only (plus a scoped accent colour): no panel, card, button, canvas,
- * layout or typography rules, and no global variables. docs/css/games.css
- * stays in charge of the dark panel and every component, so this file cannot
- * put light text on a light background and cannot go stale when the engine's
- * class names change.
+ * Tokens only (plus one scoped accent): no panel, card, button, canvas, layout
+ * or typography rules, and no global variables. docs/css/games.css stays in
+ * charge of every component, so this file cannot put light text on a light
+ * background and cannot go stale when the engine's class names change.
+ *
+ * The palette is monochrome green. Sprites keep their original desert colours
+ * inside the CRT frames; the interface does not use the old VU palette.
  */
 
 .game--allais {
-  --allais-sand: #d8c49b;
-  --allais-sand-deep: #b08a55;
-  --allais-rust: #c0653c;
-  --allais-steel: #8993a0;
-  --allais-line: rgba(216, 196, 155, 0.28);
+  --allais-green: #12FF12;
+  --allais-green-soft: #8CFF8C;
+  --allais-green-dim: #0B7A0B;
+  --allais-green-dark: #0A5A0A;
+  --allais-line: rgba(18, 255, 18, 0.28);
 
-  accent-color: var(--allais-rust);
+  accent-color: var(--allais-green);
 }

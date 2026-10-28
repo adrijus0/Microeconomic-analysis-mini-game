@@ -1,13 +1,17 @@
 /*
- * hub.js — the games hub, the "coming soon" panels and the Paradox Report
- * Card. All content comes from CONFIG.games; progress comes from GameStore
+ * hub.js — the Paradox Report Card (the only remaining "hub" surface).
+ *
+ * Phase 3 ships one game, so this file no longer builds a card grid or
+ * coming-soon panels. It renders the end-of-game terminal readout and an empty
+ * state that points at the single game.
+ *
+ * All content comes from CONFIG.games.allais; progress comes from GameStore
  * (localStorage inside try/catch, in-memory fallback).
  */
 (function (root) {
   "use strict";
 
   var CONFIG = root.CONFIG || {};
-  var DEFAULT_ORDER = ["allais", "ellsberg", "stp", "framing"];
 
   function clear(node) {
     while (node && node.firstChild) node.removeChild(node.firstChild);
@@ -20,168 +24,8 @@
     return node;
   }
 
-  function games() {
-    return CONFIG.games || {};
-  }
-
-  function order() {
-    return CONFIG.gameOrder || DEFAULT_ORDER;
-  }
-
-  function isPlayable(game) {
-    return !!(game && game.status !== "coming");
-  }
-
-  function done(id) {
-    return !!(root.GameStore && root.GameStore.isDone(id));
-  }
-
-  /* ------------------------------------------------------------------ */
-  /* Hub                                                                */
-  /* ------------------------------------------------------------------ */
-
-  function render(host) {
-    clear(host);
-    var hub = el("section", "hub");
-    var head = el("header", "hub__head");
-    head.appendChild(el("p", "eyebrow", "Mini-games"));
-    head.appendChild(el("h1", "hub__title", "Four decisions under uncertainty"));
-    head.appendChild(
-      el(
-        "p",
-        "hub__lead",
-        "Choose first. Each game explains what your choices imply only after you lock them in."
-      )
-    );
-    hub.appendChild(head);
-
-    var grid = el("div", "hub__grid");
-    order().forEach(function (id) {
-      var game = games()[id];
-      if (!game) return;
-      grid.appendChild(card(id, game));
-    });
-    hub.appendChild(grid);
-
-    var report = el("aside", "hub__report");
-    var copy = el("div", "hub__report-copy");
-    copy.appendChild(el("h2", "hub__report-title", "Paradox Report Card"));
-    copy.appendChild(
-      el(
-        "p",
-        null,
-        done("allais")
-          ? "Your Allais pattern, expected-utility verdict and slide references on one screenshot-friendly card."
-          : "Play a game and this card fills with the paradox you exhibited, your choice pattern and the verdict."
-      )
-    );
-    report.appendChild(copy);
-    var link = el("a", "btn btn--small", done("allais") ? "Open report card" : "View report card");
-    link.href = "#report";
-    report.appendChild(link);
-    hub.appendChild(report);
-
-    hub.appendChild(
-      el(
-        "p",
-        "hub__footnote",
-        "Progress is stored on this device only. Nothing is uploaded."
-      )
-    );
-
-    host.appendChild(hub);
-  }
-
-  function card(id, game) {
-    var playable = isPlayable(game);
-    var played = done(id);
-    var article = el("article", "hub-card" + (playable ? "" : " hub-card--coming"));
-    var link = el("a", "hub-card__link");
-    link.href = "#" + id;
-    link.setAttribute(
-      "aria-label",
-      game.title +
-        (played
-          ? " — played"
-          : playable
-          ? " — play now"
-          : " — coming in Phase 3")
-    );
-
-    var art = el("div", "hub-card__art");
-    if (game.card) {
-      art.appendChild(
-        root.GameAssets.img(game.card, {
-          className: "hub-card__img",
-          alt: game.cardAlt || ""
-        })
-      );
-    } else {
-      art.appendChild(comingArt(game));
-    }
-    if (played) {
-      art.appendChild(el("span", "hub-card__badge hub-card__badge--done", "✓ Played"));
-    } else if (!playable) {
-      art.appendChild(el("span", "hub-card__badge", "Coming in Phase 3"));
-    }
-    link.appendChild(art);
-
-    var body = el("div", "hub-card__body");
-    body.appendChild(el("h2", "hub-card__title", game.title));
-    body.appendChild(el("p", "hub-card__tagline", game.tagline || ""));
-    var status = el(
-      "span",
-      "hub-card__status",
-      played ? "Play again" : playable ? "Play now" : "Coming in Phase 3"
-    );
-    if (!playable) status.classList.add("hub-card__status--muted");
-    body.appendChild(status);
-    link.appendChild(body);
-
-    article.appendChild(link);
-    return article;
-  }
-
-  function comingArt(game) {
-    var art = el("div", "hub-card__coming-art");
-    art.setAttribute("aria-hidden", "true");
-    art.appendChild(el("span", "hub-card__glyph", game.glyph || "▣"));
-    return art;
-  }
-
-  /* ------------------------------------------------------------------ */
-  /* Coming soon                                                        */
-  /* ------------------------------------------------------------------ */
-
-  function renderComing(host, id) {
-    clear(host);
-    var game = games()[id] || { title: "This game" };
-    var panel = el("section", "coming");
-    panel.appendChild(el("p", "eyebrow", "Coming in Phase 3"));
-    panel.appendChild(el("h1", "coming__title", game.title));
-    if (game.paradox) panel.appendChild(el("p", "coming__paradox", game.paradox));
-    var box = el("div", "coming__box");
-    box.appendChild(
-      el(
-        "p",
-        null,
-        game.comingCopy ||
-          "This game is not built yet. The cards, art and verdict logic arrive in Phase 3; the deck's Try-it button already points here, so nothing is broken."
-      )
-    );
-    if (game.proposed) {
-      box.appendChild(el("p", "coming__note", game.proposed));
-    }
-    panel.appendChild(box);
-    var actions = el("div", "stage__actions");
-    var back = el("a", "btn btn--primary", "Back to hub");
-    back.href = "play.html";
-    actions.appendChild(back);
-    var report = el("a", "btn btn--ghost", "Report Card");
-    report.href = "#report";
-    actions.appendChild(report);
-    panel.appendChild(actions);
-    host.appendChild(panel);
+  function game() {
+    return (CONFIG.games || {}).allais || null;
   }
 
   /* ------------------------------------------------------------------ */
@@ -209,8 +53,8 @@
     return "Slide" + (sorted.length === 1 ? " " : "s ") + parts.join(", ");
   }
 
-  function benchmarkText(game) {
-    var b = game && game.benchmark;
+  function benchmarkText(gameConfig) {
+    var b = gameConfig && gameConfig.benchmark;
     if (!b) return null;
     var text = "";
     if (b.r1 != null) text += b.r1 + "% chose A";
@@ -219,10 +63,10 @@
     return text || null;
   }
 
-  function verdictFor(result, game) {
-    if (root.AllaisGame && game && game.id === "allais") {
+  function verdictFor(result, gameConfig) {
+    if (root.AllaisGame && gameConfig && gameConfig.id === "allais") {
       try {
-        return root.AllaisGame.verdict(result.choices, game);
+        return root.AllaisGame.verdict(result.choices, gameConfig);
       } catch (err) {
         return null;
       }
@@ -230,12 +74,14 @@
     return null;
   }
 
-  function renderReport(host) {
+  function renderReport(host, options) {
     clear(host);
-    var game = games().allais;
-    var result = root.GameStore ? root.GameStore.get("allais") : null;
+    var allowSaved = !options || options.allowSaved !== false;
+    var gameConfig = game();
+    var result = allowSaved && root.GameStore ? root.GameStore.get("allais") : null;
 
-    if (!result || !game) {
+    if (!result || !gameConfig) {
+      var locked = !allowSaved && !!(root.GameStore && root.GameStore.get("allais"));
       var empty = el("section", "report-empty");
       empty.appendChild(el("p", "eyebrow", "Paradox Report Card"));
       empty.appendChild(el("h1", "report-empty__title", "No card yet"));
@@ -243,31 +89,31 @@
         el(
           "p",
           "report-empty__copy",
-          "Play The Caravan Lockboxes to fill in your choice pattern, the expected-utility verdict and the slide references."
+          locked
+            ? "Finish both contracts in this run to unlock the Report Card again."
+            : "Play The Caravan Lockboxes to fill in your choice pattern, the expected-utility verdict and the slide references."
         )
       );
-      var cta = el("a", "btn btn--primary", "Play The Caravan Lockboxes");
+      var cta = el("a", "btn btn--primary", "Enter the game");
       cta.href = "#allais";
       empty.appendChild(cta);
-      var back = el("a", "btn btn--ghost", "Back to hub");
-      back.href = "play.html";
-      empty.appendChild(back);
       host.appendChild(empty);
       return;
     }
 
-    var verdict = verdictFor(result, game);
+    var verdict = verdictFor(result, gameConfig);
     var consistent =
       typeof result.consistent === "boolean" ? result.consistent : null;
     var card = el("article", "report-card");
     var head = el("header", "report-card__head");
     head.appendChild(el("p", "eyebrow", "Paradox Report Card"));
-    head.appendChild(el("h1", "report-card__title", game.title));
+    head.appendChild(el("h1", "report-card__title", gameConfig.title));
     head.appendChild(
       el(
         "p",
         "report-card__paradox",
-        game.paradox + (game.paradoxSub ? " · " + game.paradoxSub : "")
+        gameConfig.paradox +
+          (gameConfig.paradoxSub ? " · " + gameConfig.paradoxSub : "")
       )
     );
     card.appendChild(head);
@@ -320,14 +166,15 @@
     field("Your choice pattern", result.pattern || "—");
     field(
       "Round 1 → Round 2",
-      result.choices
-        ? result.choices.r1 + " → " + result.choices.r2
-        : "—"
+      result.choices ? result.choices.r1 + " → " + result.choices.r2 : "—"
     );
-    field("Benchmark (A+C)", benchmarkText(game) || "—");
+    field("Population benchmark", benchmarkText(gameConfig) || "—");
     field("Certainty equivalent", "Not measured in this game");
     field("CRRA / risk aversion", "Not measured in this game");
-    field("Slide references", formatRefs(game.slideRefs || [10, 11, 12, 13, 14, 15, 16, 22]));
+    field(
+      "Slide references",
+      formatRefs(gameConfig.slideRefs || [10, 11, 12, 13, 14, 15, 16, 22])
+    );
     card.appendChild(grid);
 
     if (verdict && verdict.plainExplanation) {
@@ -351,11 +198,7 @@
       }
     }
     foot.appendChild(
-      el(
-        "span",
-        null,
-        when ? "Played " + when : "Played on this device"
-      )
+      el("span", null, when ? "Played " + when : "Played on this device")
     );
     if (result.seed) foot.appendChild(el("span", null, "seed " + result.seed));
     card.appendChild(foot);
@@ -364,8 +207,8 @@
     var again = el("a", "btn btn--primary", "Play again");
     again.href = "#allais";
     actions.appendChild(again);
-    var back2 = el("a", "btn btn--ghost", "Back to hub");
-    back2.href = "play.html";
+    var back2 = el("a", "btn btn--ghost", "Back to entry screen");
+    back2.href = "index.html";
     actions.appendChild(back2);
     card.appendChild(actions);
 
@@ -374,14 +217,12 @@
       el(
         "p",
         "report-card__footnote",
-        "The report card stores only your game result on this device."
+        "The report card stores only your game result on this device. No simulation data is recorded."
       )
     );
   }
 
   root.Hub = {
-    render: render,
-    renderComing: renderComing,
     renderReport: renderReport
   };
 })(typeof window !== "undefined" ? window : globalThis);

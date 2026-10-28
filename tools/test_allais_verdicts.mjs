@@ -379,23 +379,13 @@ expectTrue(
   "  plainExplanation: " + JSON.stringify(results["B + D"].plainExplanation)
 );
 
-/* --------------------------------------------------------------- EV / P(0) */
+/* --------------------------------------------------------------- EV */
 
 const expectedEv = { A: 2400, B: 2409, C: 825, D: 816 };
-const expectedPWorst = { A: 0, B: 0.01, C: 0.67, D: 0.66 };
 
 Object.keys(expectedEv).forEach((id) => {
   Object.keys(results).forEach((pattern) => {
     expectNumber(pattern + " ev." + id, results[pattern].ev[id], expectedEv[id]);
-  });
-});
-Object.keys(expectedPWorst).forEach((id) => {
-  Object.keys(results).forEach((pattern) => {
-    expectNumber(
-      pattern + " pWorst." + id,
-      results[pattern].pWorst[id],
-      expectedPWorst[id]
-    );
   });
 });
 
@@ -464,6 +454,80 @@ const roundKeyedLegacy = AllaisGame.verdict({ r1: "A", r2: "C" }, renamedRounds)
 expectTrue(
   "renamed round ids: literal r1/r2 fallback still works",
   roundKeyedLegacy.consistent === false
+);
+
+/* ------------------------------------------- per-round theory checkpoint */
+
+const checkpointCases = [
+  {
+    round: 0,
+    choice: "A",
+    other: "B",
+    premise: "A\\succ B",
+    inequality: "0.34\\,u(2400) > 0.33\\,u(2500)",
+    plain: "0.34\u00b7u(2400) > 0.33\u00b7u(2500)"
+  },
+  {
+    round: 0,
+    choice: "B",
+    other: "A",
+    premise: "B\\succ A",
+    inequality: "0.33\\,u(2500) > 0.34\\,u(2400)",
+    plain: "0.33\u00b7u(2500) > 0.34\u00b7u(2400)"
+  },
+  {
+    round: 1,
+    choice: "C",
+    other: "D",
+    premise: "C\\succ D",
+    inequality: "0.33\\,u(2500) > 0.34\\,u(2400)",
+    plain: "0.33\u00b7u(2500) > 0.34\u00b7u(2400)"
+  },
+  {
+    round: 1,
+    choice: "D",
+    other: "C",
+    premise: "D\\succ C",
+    inequality: "0.34\\,u(2400) > 0.33\\,u(2500)",
+    plain: "0.34\u00b7u(2400) > 0.33\u00b7u(2500)"
+  }
+];
+
+expectTrue(
+  "AllaisGame.checkpoint is a function",
+  AllaisGame && typeof AllaisGame.checkpoint === "function"
+);
+
+checkpointCases.forEach((row) => {
+  const round = game.rounds[row.round];
+  const checkpoint = AllaisGame.checkpoint(round, row.choice, game);
+  const label = "checkpoint " + row.choice + " over " + row.other;
+  expectEqual(label + " chosen", checkpoint.chosen, row.choice);
+  expectEqual(label + " other", checkpoint.other, row.other);
+  expectEqual(label + " premiseTex", checkpoint.premiseTex, row.premise);
+  expectEqual(label + " inequalityTex", checkpoint.inequalityTex, row.inequality);
+  expectEqual(
+    label + " equivalenceTex",
+    checkpoint.equivalenceTex,
+    row.premise + " \\iff " + row.inequality
+  );
+  expectEqual(label + " inequalityPlain", checkpoint.inequalityPlain, row.plain);
+  expectTrue(
+    label + " has option labels",
+    checkpoint.chosenLabel === round.options.find((o) => o.id === row.choice).label &&
+      checkpoint.otherLabel === round.options.find((o) => o.id === row.other).label
+  );
+});
+
+const renamedCheckpoint = AllaisGame.checkpoint(
+  renamed.rounds[0],
+  "raider_route",
+  renamed
+);
+expectEqual(
+  "renamed ids: checkpoint derives B-over-A analogue",
+  renamedCheckpoint.inequalityTex,
+  "0.33\\,u(2500) > 0.34\\,u(2400)"
 );
 
 /* ------------------------------------------------------------------ report */

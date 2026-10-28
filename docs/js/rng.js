@@ -5,10 +5,8 @@
  * No external requests, no modules. Loadable in Node (module.exports).
  *
  * mulberry32 is a small, fast, deterministic 32-bit PRNG. Every stream is
- * created from a string seed, so `?seed=42` reproduces:
- *   - the draw in each round,
- *   - the 1,000-run simulation for every option,
- *   independently of which options the player picked.
+ * created from a string seed, so `?seed=42` reproduces the single draw in
+ * each round independently of which options the player picked.
  *
  * Usage:
  *   var rng = RNG.create("42|r1|draw");

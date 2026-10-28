@@ -1,31 +1,17 @@
 /*
- * play.js — hash router for the games hub.
+ * play.js — hash router for the single-game site.
  *
- *   play.html            → hub
- *   play.html#allais     → The Caravan Lockboxes (real game)
- *   play.html#stp        → The Doubling Contract (coming soon)
- *   play.html#ellsberg   → The Fixer's Crate (coming soon)
- *   play.html#framing    → The Jarl's Orders (coming soon)
+ *   play.html            → The Caravan Lockboxes
+ *   play.html#allais     → The Caravan Lockboxes (same game)
  *   play.html#report     → Paradox Report Card
  *
- * The deck's Try-it overlay loads these same URLs in an iframe; nothing here
- * assumes it is the top window.
+ * Phase 3 removed the four-game hub, the coming-soon routes and the deck
+ * overlay. Unknown hashes fall back to the game rather than a dead end.
  */
 (function (root) {
   "use strict";
 
   var CONFIG = root.CONFIG || {};
-
-  /* Inside the deck's Try-it iframe the deck already shows the game title and
-     its own Close button, so hide the site bar and use the full height. The
-     comparison is safe even when the parent is cross-origin (file://). */
-  try {
-    if (root.self !== root.top) {
-      document.documentElement.classList.add("is-embedded");
-    }
-  } catch (err) {
-    document.documentElement.classList.add("is-embedded");
-  }
 
   function byId(id) {
     return document.getElementById(id);
@@ -33,9 +19,7 @@
 
   function views() {
     return {
-      hub: byId("view-hub"),
       game: byId("view-game"),
-      coming: byId("view-coming"),
       report: byId("view-report")
     };
   }
@@ -57,31 +41,36 @@
       .toLowerCase();
   }
 
-  function gameFor(id) {
-    var game = (CONFIG.games || {})[id];
-    if (!game) return null;
-    return game;
-  }
-
   function setTitle(text) {
     document.title = text
       ? text + " — Paradoxes of Choices under Uncertainty"
-      : "Games — Paradoxes of Choices under Uncertainty";
+      : "Paradoxes of Choices under Uncertainty";
   }
 
   function route() {
+    /* Capture the running stage before stopping the engine: a Report opened
+       from the reveal may show the saved card; a Report opened mid-run must
+       not leak the previous run's result (or the paradox name). */
+    var active =
+      root.Engine && root.Engine.current ? root.Engine.current : null;
+    var allowSavedReport = !active || active.stage === "reveal";
+
     if (root.Engine && typeof root.Engine.stop === "function") root.Engine.stop();
 
     var id = idFromHash();
-    if (!id || id === "hub" || id === "home") {
-      show("hub");
-      root.Hub.render(byId("view-hub"));
-      setTitle("Games");
+
+    if (id === "report") {
+      show("report");
+      root.Hub.renderReport(byId("view-report"), {
+        allowSaved: allowSavedReport
+      });
+      setTitle("Paradox Report Card");
       window.scrollTo(0, 0);
       return;
     }
 
-    if (id === "report") {
+    var game = (CONFIG.games || {}).allais;
+    if (!game) {
       show("report");
       root.Hub.renderReport(byId("view-report"));
       setTitle("Paradox Report Card");
@@ -89,27 +78,9 @@
       return;
     }
 
-    var game = gameFor(id);
-    if (game && game.status !== "coming") {
-      show("game");
-      setTitle(game.title);
-      root.Engine.mount(byId("view-game"), game);
-      window.scrollTo(0, 0);
-      return;
-    }
-
-    if (game) {
-      show("coming");
-      root.Hub.renderComing(byId("view-coming"), id);
-      setTitle(game.title);
-      window.scrollTo(0, 0);
-      return;
-    }
-
-    /* Unknown route: show the hub rather than a dead end. */
-    show("hub");
-    root.Hub.render(byId("view-hub"));
-    setTitle("Games");
+    show("game");
+    setTitle(game.title);
+    root.Engine.mount(byId("view-game"), game);
     window.scrollTo(0, 0);
   }
 
