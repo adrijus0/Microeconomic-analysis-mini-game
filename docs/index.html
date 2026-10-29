@@ -6,7 +6,7 @@
   <meta name="color-scheme" content="dark">
   <meta name="theme-color" content="#020802">
   <title>Wasteland Odds — Paradoxes of Choices under Uncertainty</title>
-  <meta name="description" content="Three Fallout: New Vegas deals that break the textbook theory of choice: St. Petersburg, Allais and Ellsberg.">
+  <meta name="description" content="Four Fallout: New Vegas deals that break the textbook theory of choice: St. Petersburg, Allais, Ellsberg and loss aversion.">
   <link rel="stylesheet" href="css/theme.css">
 </head>
 <body class="terminal-page">
@@ -14,7 +14,10 @@
     <section class="terminal__frame" id="terminal-frame" aria-labelledby="terminal-title">
       <header class="terminal__bar">
         <span class="terminal__bar-label">RobCo termlink</span>
-        <span class="terminal__bar-status">☢ Online</span>
+        <span class="terminal__bar-right">
+          <span class="terminal__bar-status">☢ Online</span>
+          <button class="sound-toggle is-on" id="sound-toggle" type="button" title="8-bit sound">♪ Sound on</button>
+        </span>
       </header>
 
       <div class="terminal__screen">
@@ -28,14 +31,18 @@
         <h1 class="terminal__title boot-step" id="terminal-title">Wasteland Odds</h1>
         <p class="eyebrow boot-step" id="terminal-subtitle">Paradoxes of Choices under Uncertainty</p>
         <p class="terminal__lead boot-step" id="terminal-lead">
-          Three deals in the Mojave. Trust your gut — then see the theory your gut just broke.
+          Four deals. Trust your gut, then see what it broke.
         </p>
 
         <figure class="terminal__art boot-step">
           <img id="terminal-art"
-               src="assets/cards/hub_allais.png"
-               alt="A steel strongbox on a Mojave highway, with a watchtower behind"
+               src="assets/cards/title_card.png"
+               alt="New Vegas at dusk with a distant mushroom cloud; a power armor helmet, a Pip-Boy and a Nuka-Cola bottle in the sand"
                width="640" height="360">
+          <!-- Light that lives in the picture: cloud glow, beacon, Pip-Boy screen. -->
+          <span class="art-fx art-fx--cloud" aria-hidden="true"></span>
+          <span class="art-fx art-fx--beacon" aria-hidden="true"></span>
+          <span class="art-fx art-fx--screen" aria-hidden="true"></span>
         </figure>
 
         <div class="terminal__actions boot-step">
@@ -43,14 +50,12 @@
         </div>
       </div>
 
-      <footer class="terminal__foot">
-        <span id="terminal-disclaimer">Fan-made class project · not affiliated with Bethesda</span>
-      </footer>
     </section>
   </main>
 
   <script src="config.js"></script>
   <script src="js/fx.js"></script>
+  <script src="js/sfx.js"></script>
   <script>
     (function () {
       "use strict";
@@ -66,25 +71,36 @@
       set("terminal-subtitle", landing.subtitle);
       set("terminal-lead", landing.lead);
       set("terminal-cta", landing.cta ? "▶ " + landing.cta : "");
-      set("terminal-disclaimer", landing.disclaimer);
       if (landing.title) document.title = landing.title + " — " + (landing.subtitle || c.subtitle || "");
 
       var art = $("terminal-art");
-      var entry = c.assets && c.assets.hub_allais;
+      var entry = c.assets && c.assets.title_card;
       if (art && entry) {
         art.src = entry.file;
         art.alt = entry.alt || "";
       }
 
       var FX = window.FX;
+      var SFX = window.SFX;
+      if (SFX) SFX.mountToggle($("sound-toggle"));
       if (!FX) return;
       FX.ash();
+
+      function sfx(name) {
+        if (SFX) SFX.play(name);
+      }
 
       var frame = $("terminal-frame");
       var bootHost = $("terminal-boot");
       var steps = Array.prototype.slice.call(document.querySelectorAll(".boot-step"));
       var timers = [];
+      var started = false;
       var finished = false;
+      var typing = null;
+
+      $("terminal-cta").addEventListener("click", function () {
+        sfx("lock");
+      });
 
       function finish() {
         if (finished) return;
@@ -98,36 +114,54 @@
         FX.glitch($("terminal-title"));
       }
 
-      if (FX.instant()) {
-        FX.glitch($("terminal-title"));
-        return;
+      /* CRT power-on, typed boot lines, then each block flickers in. */
+      function startBoot() {
+        if (started) return;
+        started = true;
+        if (FX.instant()) {
+          frame.classList.remove("is-booting");
+          FX.glitch($("terminal-title"));
+          return;
+        }
+        frame.classList.add("is-booting", "crt-on");
+        var lines = (landing.boot || []).slice();
+        while (bootHost.firstChild) bootHost.removeChild(bootHost.firstChild);
+        typing = FX.typeLines(bootHost, lines, {
+          timers: timers,
+          speed: 12,
+          delay: 380,
+          onDone: function () {
+            steps.forEach(function (node, i) {
+              FX.later(timers, function () {
+                node.classList.add("is-on");
+                if (node.id === "terminal-title") {
+                  FX.glitch(node);
+                  sfx("glitch");
+                }
+                if (i === steps.length - 1) finish();
+              }, 160 + i * 190);
+            });
+          }
+        });
       }
 
-      /* CRT power-on, typed boot lines, then each block flickers in. */
-      frame.classList.add("is-booting", "crt-on");
-      var lines = (landing.boot || []).slice();
-      while (bootHost.firstChild) bootHost.removeChild(bootHost.firstChild);
-      var typing = FX.typeLines(bootHost, lines, {
-        timers: timers,
-        speed: 12,
-        delay: 380,
-        onDone: function () {
-          steps.forEach(function (node, i) {
-            FX.later(timers, function () {
-              node.classList.add("is-on");
-              if (node.id === "terminal-title") FX.glitch(node);
-              if (i === steps.length - 1) finish();
-            }, 160 + i * 190);
-          });
-        }
-      });
       /* Impatient wastelanders can tap to skip the boot. */
       frame.addEventListener("click", function (event) {
-        if (finished) return;
+        if (!started || finished) return;
         /* A tap during the boot only skips it, even on the button's spot. */
         event.preventDefault();
         finish();
       });
+
+      /* Sound needs one tap first (browser rule): with sound on and audio
+         still locked, the shared power-on screen waits for it, so the boot
+         types with sound like every other page. */
+      if (SFX && !FX.instant()) {
+        frame.classList.add("is-booting");
+        SFX.powerGate(frame.querySelector(".terminal__screen"), startBoot);
+      } else {
+        startBoot();
+      }
     })();
   </script>
 </body>

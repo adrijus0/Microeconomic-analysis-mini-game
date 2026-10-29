@@ -4,9 +4,9 @@
  * Classic script: no DOM access at load time, so it can be <script>-tagged
  * from file:// and require()d by Node for tests.
  *
- * Slide 11's urn, reskinned: 90 caps = 30 Nuka-Cola (the known red) + 60
- * Sunset Sarsaparilla caps, of which an unknown number s are star caps (the
- * slide's black) and 60 − s are plain (the slide's yellow).
+ * Slide 11's urn, reskinned: 90 caps = 30 red Nuka-Cola caps (the known red)
+ * + 60 yellow Sunset Sarsaparilla caps, of which an unknown number s carry a
+ * blue star (the slide's black) and 60 − s are plain (the slide's yellow).
  *
  * The verdict is DERIVED from each option's `wins` list, not from ids. A bet
  * wins on a + b·s caps (linear in the unknown s), so "chosen ≻ other" holds
@@ -18,6 +18,7 @@
  *   EllsbergGame.resolve(round, option, ctx, rng) -> one bet, one cap
  *   EllsbergGame.resolveAll(rounds, choices, ctx, rng) -> one cap settles
  *                                               both bets (used by the game)
+ *   EllsbergGame.known(option)                  -> true if its odds are known
  *   EllsbergGame.verdict(choices, game)         -> belief intervals + kind
  *   EllsbergGame.reveal(choices, game, ctx)     -> short reveal summary
  */
@@ -38,14 +39,14 @@
   var NUKA = 30;
   var SUNSET = 60;
   var PRIZE = 100;
-  var HALF = SUNSET / 2;
 
   var CAP_NAMES = {
-    nuka: "a Nuka-Cola cap",
+    nuka: "a red cap",
     star: "a star cap",
-    plain: "a plain Sunset cap"
+    plain: "a plain yellow cap"
   };
-  var PI = { nuka: "\\pi_N", star: "\\pi_S", plain: "\\pi_P" };
+  /* Red as on slide 12 (π_R); S and P for the star and plain caps. */
+  var PI = { nuka: "\\pi_R", star: "\\pi_S", plain: "\\pi_P" };
 
   function fail(message) {
     throw new Error("[EllsbergGame] " + message);
@@ -85,17 +86,16 @@
     return lo < hi ? { lo: lo, hi: hi } : null;
   }
 
-  function beliefText(range) {
-    if (!range) return "no belief at all";
-    if (range.hi <= HALF) return "fewer than " + HALF + " star caps";
-    if (range.lo >= HALF) return "more than " + HALF + " star caps";
-    return "between " + Math.round(range.lo) + " and " + Math.round(range.hi) + " star caps";
-  }
-
-  function plainText(range) {
-    if (range.hi <= HALF) return "more than " + HALF + " plain caps";
-    if (range.lo >= HALF) return "fewer than " + HALF + " plain caps";
-    return "some plain caps";
+  /*
+   * A bet's win chance as the cards show it, in whole percent of the 90 caps:
+   * { lo, hi } over every possible star count (lo === hi: known odds).
+   */
+  function chance(option) {
+    var lin = linear(option);
+    var ends = [lin.a, lin.a + lin.b * SUNSET].map(function (caps) {
+      return Math.round((caps / (NUKA + SUNSET)) * 100);
+    });
+    return { lo: Math.min(ends[0], ends[1]), hi: Math.max(ends[0], ends[1]) };
   }
 
   function pick(round, choices) {
@@ -187,7 +187,7 @@
       if (!option) fail("missing choice for " + round.id);
       var win = (option.wins || []).indexOf(cap) !== -1;
       if (win) wins += 1;
-      return { label: "Bet " + (i + 1) + " · " + option.id, win: win };
+      return { label: "Bet " + (i + 1) + " · " + option.label, win: win };
     });
     var payoff = wins * PRIZE;
     return {
@@ -195,9 +195,8 @@
       cap: cap,
       rows: rows,
       heading: wins === 2 ? "Double yeehaw!" : wins === 1 ? "Yeehaw!" : "Shucks.",
-      copy:
-        "Festus pulls out " + CAP_NAMES[cap] + ". " +
-        (wins === 2 ? "Both bets win!" : wins === 1 ? "One bet wins." : "Neither bet wins, partner.")
+      /* The prop card already names the drawn cap. */
+      copy: wins === 2 ? "Both bets win!" : wins === 1 ? "One bet wins." : "Neither bet wins, partner."
     };
   }
 
@@ -231,56 +230,41 @@
     return full === cancelled ? cancelled : full + " \\Rightarrow " + cancelled;
   }
 
-  /* Winning caps of a bet under the belief from bet 1, e.g. "over 60". The
-     two beliefs in this game sit either side of HALF star caps. */
-  function countText(option, range) {
-    var lin = linear(option);
-    var at = lin.a + lin.b * HALF;
-    if (lin.b === 0) return "exactly " + at;
-    var below = range.hi <= HALF;
-    var more = below ? lin.b < 0 : lin.b > 0;
-    return (more ? "over " : "under ") + at;
-  }
-
   function short(option) {
     return String(option.short || option.label || option.id);
   }
 
-  function capital(text) {
-    return text.charAt(0).toUpperCase() + text.slice(1);
+  /* Bet 2's options minus what they share (the plain caps) are bet 1's. */
+  function base(side) {
+    var common = (side.other.wins || []);
+    return (side.chosen.wins || []).filter(function (k) {
+      return common.indexOf(k) === -1;
+    }).sort().join("+");
   }
 
   function reveal(choices, game, ctx) {
     var v = verdict(choices, game);
     var f = v.first;
     var s = v.second;
-    var mid = f.range ? (f.range.lo + f.range.hi) / 2 : HALF;
-    var c2 = linear(s.chosen);
-    var o2 = linear(s.other);
-    var secondWins = c2.a + c2.b * mid > o2.a + o2.b * mid;
 
-    var chain = [];
-    if (f.range) {
-      chain.push(capital(short(f.chosen)) + " over " + short(f.other) + " ⇒ " + beliefText(f.range) + ".");
-      chain.push("Star + plain = 60 ⇒ " + plainText(f.range) + ".");
-      chain.push(
-        secondWins
-          ? "So " + s.chosen.id + " (" + countText(s.chosen, f.range) + ") beats " + s.other.id +
-              " (" + countText(s.other, f.range) + ") — and you picked " + s.chosen.id + "."
-          : "So " + s.other.id + " (" + countText(s.other, f.range) + ") should beat " + s.chosen.id +
-              " (" + countText(s.chosen, f.range) + ") — but you picked " + s.chosen.id + ". No belief fits both."
-      );
-    }
+    /* Bet 2 is bet 1 with plain yellow added to both sides (slide 12), so
+       the story is simply: did the same extra caps switch your pick? */
+    var stayed = base(s) === (f.chosen.wins || []).slice().sort().join("+");
+    var chain = [
+      "Bet 1: " + short(f.chosen) + " over " + short(f.other) + ".",
+      "Bet 2: the same bets, plus plain yellow on both sides. " +
+        (stayed ? "You stayed with " + short(f.chosen) + ". ✓" : "You switched to " + short(s.chosen) + ".")
+    ];
 
     var line;
     if (v.kind === "ambiguity-averse") {
-      line = "Like most people: known odds both times.";
+      line = "Like most people, you chose known odds twice. But plain yellow pays both sides alike, so it shouldn't flip red vs star.";
     } else if (v.kind === "ambiguity-seeking") {
-      line = "You chased the mystery both times: the mirror image of the crowd.";
+      line = "You chose unknown odds twice, unlike most people. But plain yellow pays both sides alike, so it shouldn't flip star vs red.";
     } else if (v.consistent) {
-      line = "One belief fits both bets.";
+      line = "The same added caps didn't switch your pick: one belief fits both bets.";
     } else {
-      line = "No single belief about the star caps fits both bets.";
+      line = "The same added caps switched your pick: no single belief fits both bets.";
     }
 
     var firstTex = needTex(f);
@@ -314,6 +298,8 @@
 
   return {
     init: init,
+    known: known,
+    chance: chance,
     drawCap: drawCap,
     resolve: resolve,
     resolveAll: resolveAll,

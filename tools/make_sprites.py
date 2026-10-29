@@ -757,12 +757,56 @@ def sprite_chip_tails() -> Image.Image:
     return outline(im)
 
 
+def sprite_garret() -> Image.Image:
+    """James Garret of the Atomic Wrangler: slicked quiff, smirk, worn suit."""
+    im = new_sprite()
+
+    # Worn pre-War suit: dingy brown jacket with lapels over a white
+    # shirt, and a rust-red tie.
+    rect(im, 7, 19, 24, 30, WOOD_D)
+    line(im, [(7, 20), (7, 30)], WOOD)
+    line(im, [(24, 20), (24, 30)], CHAR)
+    poly(im, [(12, 19), (19, 19), (17, 27), (14, 27)], SILVER_L)     # shirt
+    line(im, [(12, 19), (14, 26)], WOOD)                             # lapels
+    line(im, [(19, 19), (17, 26)], WOOD)
+    rect(im, 15, 19, 16, 20, RUST)                                   # tie knot
+    poly(im, [(15, 21), (16, 21), (17, 26), (15.5, 27), (14, 26)], RUST_L)
+    px(im, 10, 25, WOOD)                                             # worn patches
+    px(im, 21, 28, WOOD)
+    px(im, 22, 23, WOOD_L)
+
+    # Neck and face with a one-sided smirk.
+    rect(im, 13, 16, 18, 18, SKIN_D)
+    rect(im, 11, 7, 20, 16, SKIN)
+    line(im, [(20, 8), (20, 16)], SKIN_D)
+    line(im, [(11, 8), (11, 15)], SKIN_L)
+    rect(im, 13, 10, 14, 10, INK)                # eyebrows
+    rect(im, 17, 10, 18, 10, INK)
+    px(im, 13, 11, INK)                          # eyes
+    px(im, 18, 11, INK)
+    px(im, 15, 13, SKIN_D)                       # nose
+    line(im, [(14, 15), (17, 14)], INK)          # smirk
+    px(im, 18, 14, SKIN_D)
+
+    # Slicked-back dark hair: a swept quiff, short at the sides.
+    rect(im, 11, 3, 20, 6, CHAR)
+    rect(im, 12, 1, 18, 2, CHAR)
+    px(im, 19, 2, CHAR)
+    line(im, [(13, 2), (18, 2)], STEEL_D)        # shine on the quiff
+    line(im, [(12, 4), (16, 3)], STEEL_D)
+    rect(im, 10, 6, 10, 9, CHAR)
+    rect(im, 21, 6, 21, 9, CHAR)
+
+    return outline(im)
+
+
 WASTELAND_SPRITES = {
     "victor": sprite_victor,
     "festus": sprite_festus,
     "cap_barrel": sprite_cap_barrel,
     "chip_heads": sprite_chip_heads,
     "chip_tails": sprite_chip_tails,
+    "garret": sprite_garret,
 }
 
 
@@ -1226,6 +1270,338 @@ def background_scene() -> Image.Image:
     return vignette(im, strength=176, start=0.40, end=1.02)
 
 
+def outlined_layer(size, draw_fn) -> Image.Image:
+    """Draw on a clear RGBA layer, then give the silhouette a 1 px INK ring."""
+    layer = Image.new("RGBA", size, (0, 0, 0, 0))
+    draw_fn(ImageDraw.Draw(layer))
+    return outline(layer)
+
+
+def wrangler_scene() -> Image.Image:
+    """320 x 180: Freeside at night, the Atomic Wrangler's neon hat sign."""
+    im = Image.new("RGB", (320, 180), (10, 9, 20))
+    gradient(im, 0, 120, [(8, 8, 20), (14, 12, 30), (28, 18, 40), (54, 28, 46)])
+    d = ImageDraw.Draw(im)
+
+    # Stars over the wall.
+    seed = 4242
+    for _ in range(40):
+        seed = (seed * 1103515245 + 12345) % (2 ** 31)
+        x = seed % 320
+        seed = (seed * 1103515245 + 12345) % (2 ** 31)
+        d.point((x, seed % 50), fill=(150, 150, 190))
+
+    # Freeside's patchwork wall and the ruined block behind it.
+    d.rectangle([0, 70, 70, 150], fill=(34, 28, 34))
+    d.rectangle([250, 64, 320, 150], fill=(36, 30, 36))
+    for x0 in range(0, 320, 26):
+        d.rectangle([x0, 112, x0 + 22, 150], fill=(48, 40, 40) if x0 % 52 else (56, 46, 42))
+        d.line([(x0 + 3, 118), (x0 + 19, 118)], fill=(70, 58, 50))
+
+    # The saloon facade: false front, porch roof and posts.
+    d.rectangle([84, 56, 236, 150], fill=(78, 52, 38))
+    d.rectangle([84, 56, 236, 62], fill=(104, 70, 48))
+    for x0 in range(88, 236, 8):
+        d.line([(x0, 64), (x0, 150)], fill=(66, 44, 32))
+    d.rectangle([96, 104, 224, 108], fill=(58, 38, 28))
+    for x0 in (98, 140, 180, 222):
+        d.rectangle([x0, 108, x0 + 3, 150], fill=(56, 36, 26))
+    # Warm doorway and windows.
+    d.rectangle([148, 118, 172, 150], fill=(40, 24, 18))
+    d.rectangle([150, 120, 159, 150], fill=(232, 168, 84))
+    d.rectangle([161, 120, 170, 150], fill=(214, 146, 70))
+    for x0 in (106, 190):
+        d.rectangle([x0, 118, x0 + 20, 134], fill=(222, 156, 76))
+        d.line([(x0 + 10, 118), (x0 + 10, 134)], fill=(120, 70, 40))
+
+    # The neon sign: a cowboy hat ringed by atom orbits, no lettering.
+    cx, cy = 160, 34
+    d.ellipse([cx - 44, cy - 10, cx + 44, cy + 10], outline=(80, 240, 200))
+    d.ellipse([cx - 40, cy - 22, cx + 40, cy + 22], outline=(255, 90, 170))
+    d.ellipse([cx - 4, cy - 4, cx + 4, cy + 4], fill=(255, 240, 160))
+    d.polygon([(cx - 30, cy + 6), (cx + 30, cy + 6), (cx + 22, cy + 10),
+               (cx - 22, cy + 10)], fill=(255, 196, 70))
+    d.polygon([(cx - 14, cy + 6), (cx - 12, cy - 10), (cx, cy - 6),
+               (cx + 12, cy - 10), (cx + 14, cy + 6)], fill=(255, 176, 50))
+    d.line([(cx - 12, cy + 2), (cx + 12, cy + 2)], fill=(200, 60, 60), width=2)
+    d.rectangle([cx - 2, cy + 22, cx + 2, 56], fill=(60, 50, 50))
+
+    # String lights along the porch roof.
+    for i, x0 in enumerate(range(90, 232, 7)):
+        d.point((x0, 101 + (i % 2)), fill=(255, 210, 120) if i % 3 else (255, 120, 120))
+
+    # A burning barrel by the wall.
+    d.rectangle([34, 132, 50, 152], fill=(86, 46, 36))
+    d.line([(34, 138), (50, 138)], fill=(60, 34, 28))
+    d.polygon([(36, 132), (42, 118), (44, 126), (48, 116), (49, 132)], fill=(255, 150, 60))
+    d.polygon([(39, 132), (43, 124), (46, 132)], fill=(255, 220, 120))
+
+    atmospheric_haze(im, 96, 150, (220, 100, 140), 34)
+    d = ImageDraw.Draw(im)
+    d.rectangle([0, 150, 320, 180], fill=S_ROAD[0])
+    d.line([(0, 151), (320, 151)], fill=S_ROAD[2])
+    for x0 in (30, 120, 210, 290):
+        d.line([(x0, 162), (x0 + 14, 166)], fill=S_ROAD[1])
+    return vignette(im, strength=140)
+
+
+def title_scene() -> Image.Image:
+    """320 x 180 title card: New Vegas at dusk, a far mushroom cloud, and a
+    Pip-Boy, a power armor helmet and a Nuka-Cola bottle in the sand."""
+    im = Image.new("RGB", (320, 180), S_SKY[2])
+    gradient(im, 0, 124, [(16, 14, 34), (34, 24, 50), (74, 40, 60),
+                          (132, 64, 62), (196, 106, 70), (232, 160, 96)])
+    d = ImageDraw.Draw(im)
+    seed = 777
+    for _ in range(45):
+        seed = (seed * 1103515245 + 12345) % (2 ** 31)
+        x = seed % 320
+        seed = (seed * 1103515245 + 12345) % (2 ** 31)
+        d.point((x, seed % 46), fill=(170, 160, 200))
+
+    # Far mushroom cloud on the right horizon, clear of the bottle.
+    mx = 232
+    d.polygon([(mx - 6, 120), (mx - 4, 70), (mx + 4, 70), (mx + 6, 120)], fill=(170, 84, 56))
+    d.line([(mx - 2, 72), (mx - 3, 118)], fill=(214, 120, 70))
+    d.ellipse([mx - 22, 84, mx + 22, 94], fill=(150, 72, 54))
+    d.ellipse([mx - 30, 34, mx + 30, 74], fill=(150, 66, 52))
+    d.ellipse([mx - 26, 32, mx + 26, 66], fill=(206, 104, 64))
+    d.ellipse([mx - 18, 34, mx + 18, 58], fill=(240, 152, 78))
+    d.ellipse([mx - 10, 38, mx + 10, 52], fill=(255, 210, 120))
+    atmospheric_haze(im, 26, 80, (255, 170, 90), 28)
+
+    # Mesas and the Strip skyline, the Lucky 38 rising above.
+    d = ImageDraw.Draw(im)
+    d.polygon([(0, 112), (36, 104), (70, 110), (110, 100), (150, 108),
+               (200, 102), (320, 112), (320, 124), (0, 124)], fill=(70, 42, 52))
+    for x0, x1, top in ((70, 88, 96), (90, 104, 90), (136, 152, 94),
+                        (154, 170, 100), (176, 190, 104)):
+        d.rectangle([x0, top, x1, 124], fill=(40, 30, 44))
+        for wy in range(top + 3, 122, 4):
+            for wx in range(x0 + 2, x1 - 1, 3):
+                if (wx * 5 + wy) % 4:
+                    d.point((wx, wy), fill=(200, 160, 96))
+    cx = 120
+    d.rectangle([cx - 6, 54, cx + 6, 124], fill=(52, 44, 58))
+    d.rectangle([cx - 6, 54, cx - 4, 124], fill=(80, 70, 88))
+    for wy in range(58, 122, 3):
+        for wx in range(cx - 3, cx + 5, 2):
+            if (wx + wy) % 5:
+                d.point((wx, wy), fill=(232, 200, 120))
+    d.polygon([(cx - 18, 48), (cx + 18, 48), (cx + 12, 54), (cx - 12, 54)], fill=(80, 70, 88))
+    d.rectangle([cx - 18, 46, cx + 18, 48], fill=(120, 108, 130))
+    d.polygon([(cx - 8, 46), (cx + 8, 46), (cx + 4, 41), (cx - 4, 41)], fill=(64, 56, 74))
+    d.line([(cx, 41), (cx, 26)], fill=(120, 108, 130))
+    d.rectangle([cx - 1, 24, cx + 1, 25], fill=(255, 70, 60))
+    atmospheric_haze(im, 100, 128, (240, 150, 100), 40)
+
+    # Desert floor.
+    d = ImageDraw.Draw(im)
+    gradient(im, 124, 180, [S_SAND[1], S_SAND[2], S_SAND[3]])
+    d = ImageDraw.Draw(im)
+    d.line([(40, 140), (90, 136)], fill=S_SAND[0])
+    d.line([(200, 150), (260, 146)], fill=S_SAND[0])
+
+    shadows = Image.new("RGBA", im.size, (0, 0, 0, 0))
+    sd = ImageDraw.Draw(shadows)
+    for box in ([6, 158, 106, 174], [116, 166, 210, 180], [268, 164, 316, 178]):
+        sd.ellipse(box, fill=(40, 26, 20, 110))
+    im = Image.alpha_composite(im.convert("RGBA"), shadows)
+
+    # Power armor helmet (left): a T-51 helmet traced from a reference
+    # photo. Every shape is written in the photo's own 600 x 900 pixel
+    # coordinates and mapped onto the canvas by P() (scale 0.21), so parts
+    # keep their true positions and proportions.
+    def helmet(dd):
+        S, OX, OY = 0.21, 4, 82
+
+        def P(x, y):
+            return (OX + (x - 70) * S, OY + (y - 258) * S)
+
+        def poly_ref(points, fill):
+            dd.polygon([P(x, y) for x, y in points], fill=fill)
+
+        def circle_ref(x, y, r, fill):
+            cx2, cy2 = P(x, y)
+            rr = r * S
+            dd.ellipse([cx2 - rr, cy2 - rr, cx2 + rr, cy2 + rr], fill=fill)
+
+        black, visor = (18, 20, 24, 255), (62, 72, 74, 255)
+        dark, mid = (50, 54, 60, 255), (116, 122, 130, 255)
+        light, hi = (168, 174, 182, 255), (214, 218, 224, 255)
+
+        def slatted(x, y, r, ring):
+            circle_ref(x, y, r, dark)
+            circle_ref(x, y, r - 3, ring)
+            circle_ref(x, y, r - 8, black)
+            cx2, cy2 = P(x, y)
+            inner = (r - 8) * S
+            gx = cx2 - inner + 1.5
+            while gx < cx2 + inner - 1:
+                h = (max(0.0, inner ** 2 - (gx - cx2) ** 2)) ** 0.5
+                if h > 1:
+                    dd.line([(round(gx), round(cy2 - h + 1)), (round(gx), round(cy2 + h - 1))], fill=mid)
+                gx += 2
+
+        def hose(points, width):
+            """Corrugated hose: a chain of silver beads across the run, each
+            lit on top and shaded below, with dark gaps between them."""
+            pts = [P(x, y) for x, y in points]
+            w = width * S
+            dd.line(pts, fill=black, width=max(3, round(w)))
+            gap = max(3.0, w * 0.42)
+            carry = 0.0
+            for (x0, y0), (x1, y1) in zip(pts, pts[1:]):
+                length = math.hypot(x1 - x0, y1 - y0) or 1
+                along_x = abs(x1 - x0) >= abs(y1 - y0)
+                d = carry
+                while d <= length:
+                    t = d / length
+                    x, y = x0 + (x1 - x0) * t, y0 + (y1 - y0) * t
+                    a, b = (gap * 0.55, w / 2) if along_x else (w / 2, gap * 0.55)
+                    dd.ellipse([x - a, y - b, x + a, y + b], fill=mid)
+                    dd.ellipse([x - a + 0.5, y - b + 0.5, x + a - 0.5, y + b * 0.2], fill=light)
+                    dd.point((round(x - a * 0.3), round(y - b * 0.6)), fill=hi)
+                    d += gap
+                carry = d - length
+
+        # Hoses' upper runs, which pass behind the shell.
+        hose([(72, 580), (80, 540), (110, 495), (140, 465), (160, 445)], 50)
+        hose([(528, 560), (515, 510), (490, 470), (460, 450), (440, 435)], 50)
+
+        # Ear rings at the ends of the visor.
+        for box in ((116, 370, 160, 438), (424, 352, 470, 438)):
+            x0, y0 = P(box[0], box[1])
+            x1, y1 = P(box[2], box[3])
+            dd.ellipse([x0, y0, x1, y1], fill=dark)
+            dd.ellipse([x0 + 2, y0 + 2, x1 - 2, y1 - 2], fill=light)
+            dd.ellipse([x0 + 3, y0 + 4, x1 - 3, y1 - 4], fill=mid)
+
+        # The shell: flat-topped crest, round dome, tapering mask to the chin.
+        poly_ref([(252, 262), (327, 260), (360, 268), (392, 290), (410, 320), (422, 350),
+                  (432, 385), (440, 430), (446, 470), (445, 510), (430, 560), (405, 605),
+                  (375, 640), (345, 666), (300, 672), (255, 666), (225, 640), (195, 605),
+                  (170, 560), (155, 510), (152, 470), (150, 430), (150, 385), (155, 345),
+                  (168, 315), (190, 288), (220, 270)], mid)
+        poly_ref([(250, 440), (340, 440), (360, 520), (340, 600), (300, 640), (260, 600),
+                  (238, 520)], light)                                   # lit mask centre
+        poly_ref([(400, 300), (420, 340), (430, 385), (410, 385), (402, 330)], dark)
+        poly_ref([(420, 450), (440, 470), (438, 520), (420, 560), (412, 520)], dark)
+
+        # Crest plate with the round slatted intake.
+        poly_ref([(250, 262), (330, 260), (340, 300), (340, 365), (320, 385), (290, 393),
+                  (262, 385), (244, 365), (244, 300)], light)
+        dd.line([P(244, 300), P(244, 365)], fill=dark)
+        dd.line([P(340, 300), P(340, 365)], fill=dark)
+        slatted(291, 325, 38, light)
+
+        # Louvred vents either side of the crest.
+        for x0, y0, x1, y1 in ((214, 308, 244, 380), (336, 304, 368, 374)):
+            a0, b0 = P(x0, y0)
+            a1, b1 = P(x1, y1)
+            dd.rectangle([a0, b0, a1, b1], fill=black)
+            yy = b0 + 1
+            while yy < b1:
+                dd.line([(a0 + 1, yy), (a1 - 1, yy)], fill=mid)
+                yy += 2
+
+        # Visor frame and the wide visor, its top dipping at the centre.
+        poly_ref([(148, 364), (290, 394), (434, 358), (438, 434), (148, 438)], light)
+        poly_ref([(172, 378), (290, 405), (418, 372), (418, 424), (172, 426)], visor)
+        poly_ref([(172, 410), (418, 408), (418, 424), (172, 426)], (84, 98, 100, 255))   # reflection
+        dd.line([P(180, 384), P(260, 402)], fill=(120, 146, 152, 255))   # glint
+
+        # Centre ridge down into the round slatted chin grille.
+        a0, b0 = P(281, 440)
+        a1, b1 = P(306, 578)
+        dd.rectangle([a0, b0, a1, b1], fill=light)
+        a0, b0 = P(289, 448)
+        a1, b1 = P(298, 572)
+        dd.rectangle([a0, b0, a1, b1], fill=black)
+        slatted(300, 617, 50, light)
+
+        # Mesh cheek grilles.
+        for x, y in ((240, 502), (352, 492)):
+            circle_ref(x, y, 24, dark)
+            circle_ref(x, y, 21, hi)
+            circle_ref(x, y, 15, black)
+            cx2, cy2 = P(x, y)
+            for mx in (-1, 0, 1):
+                for my in (-1, 0, 1):
+                    if (mx + my) % 2 == 0:
+                        dd.point((round(cx2 + mx), round(cy2 + my)), fill=light)
+
+        # Hook pipes from under the visor, curving down the cheeks.
+        for pts in (((214, 446), (196, 460), (176, 482), (160, 508), (152, 534)),
+                    ((376, 446), (394, 460), (414, 482), (430, 508), (438, 534))):
+            line_pts = [P(x, y) for x, y in pts]
+            dd.line(line_pts, fill=black, width=6)
+            dd.line(line_pts, fill=light, width=4)
+            dd.line(line_pts, fill=hi, width=1)
+            for jx, jy in (line_pts[0], line_pts[2]):                   # joint rings
+                dd.ellipse([jx - 3, jy - 3, jx + 3, jy + 3], fill=dark)
+                dd.ellipse([jx - 2, jy - 2, jx + 2, jy + 2], fill=light)
+
+        # The big corrugated hoses in front, from the cheeks out to the sides.
+        hose([(252, 596), (205, 604), (150, 606), (100, 598), (72, 580)], 76)
+        hose([(348, 596), (400, 604), (460, 596), (505, 578), (528, 560)], 76)
+
+        # Headlamp on its wire arm, top left.
+        dd.line([P(168, 298), P(138, 304), P(134, 340), P(138, 382)], fill=dark, width=2)
+        circle_ref(205, 300, 40, dark)
+        circle_ref(205, 296, 35, light)
+        circle_ref(205, 296, 27, mid)
+        circle_ref(203, 290, 18, hi)
+    im = Image.alpha_composite(im, outlined_layer(im.size, helmet))
+
+    # Pip-Boy 3000 (centre): screen glowing green, knobs, wrist cuff.
+    def pipboy(dd):
+        body, body_l, body_d = (112, 100, 70, 255), (150, 138, 98, 255), (76, 66, 46, 255)
+        dd.rectangle([118, 150, 132, 172], fill=body_d)
+        dd.rectangle([196, 150, 210, 172], fill=body_d)
+        dd.rectangle([128, 140, 200, 176], fill=body)
+        dd.rectangle([128, 140, 200, 143], fill=body_l)
+        dd.rectangle([134, 146, 172, 170], fill=(20, 24, 18, 255))
+        dd.rectangle([136, 148, 170, 168], fill=(28, 92, 34, 255))
+        for sy in range(149, 168, 2):
+            dd.line([(136, sy), (170, sy)], fill=(36, 112, 40, 255))
+        for i, h in enumerate((6, 10, 4, 12, 8)):
+            dd.rectangle([140 + i * 6, 164 - h, 143 + i * 6, 164], fill=(150, 255, 140, 255))
+        dd.ellipse([178, 146, 190, 158], fill=body_d)
+        dd.ellipse([180, 148, 188, 156], fill=(180, 168, 120, 255))
+        dd.ellipse([178, 160, 186, 168], fill=body_d)
+        dd.ellipse([189, 160, 197, 168], fill=body_d)
+        dd.rectangle([192, 146, 196, 150], fill=(220, 60, 50, 255))
+    im = Image.alpha_composite(im, outlined_layer(im.size, pipboy))
+
+    # Nuka-Cola bottle (right): curvy glass, red label band, cap on top.
+    def bottle(dd):
+        glass, glass_l = (110, 26, 30, 255), (170, 60, 60, 255)
+        half = [(4, 0), (4, 12), (9, 22), (11, 32), (8, 44), (10, 56), (13, 70), (13, 78)]
+        bx, by = 292, 92
+        pts = [(bx + x, by + y) for x, y in half] + [(bx - x, by + y) for x, y in reversed(half)]
+        dd.polygon(pts, fill=glass)
+        dd.line([(bx - 6, by + 24), (bx - 8, by + 34)], fill=glass_l, width=2)
+        dd.line([(bx - 9, by + 58), (bx - 11, by + 74)], fill=glass_l, width=2)
+        dd.rectangle([bx - 10, by + 40, bx + 9, by + 52], fill=(218, 58, 48, 255))
+        dd.line([(bx - 8, by + 48), (bx - 2, by + 44), (bx + 4, by + 48), (bx + 8, by + 44)],
+                fill=(240, 236, 220, 255))
+        dd.rectangle([bx - 5, by - 4, bx + 5, by], fill=(200, 200, 206, 255))
+        dd.line([(bx - 5, by - 4), (bx + 5, by - 4)], fill=(240, 240, 244, 255))
+    im = Image.alpha_composite(im, outlined_layer(im.size, bottle))
+
+    # Bottle caps scattered in the sand.
+    def caps(dd):
+        for cx2, cy2, red in ((110, 172, True), (226, 172, False), (258, 168, True),
+                              (112, 160, False), (236, 158, True)):
+            fill = (218, 58, 48, 255) if red else (240, 190, 60, 255)
+            dd.ellipse([cx2 - 3, cy2 - 2, cx2 + 3, cy2 + 2], fill=fill)
+            dd.point((cx2 - 1, cy2 - 1), fill=(255, 230, 200, 255))
+    im = Image.alpha_composite(im, outlined_layer(im.size, caps))
+
+    return vignette(im.convert("RGB"), strength=110, start=0.5, end=1.08)
+
+
 # ---------------------------------------------------------------------------
 # Saving and verification
 # ---------------------------------------------------------------------------
@@ -1294,7 +1670,17 @@ def verify() -> list[str]:
     if bg.stat().st_size > 400 * 1024:
         problems.append(f"allais_bg.png: {bg.stat().st_size} B > 400 KB")
 
-    for name in ("strip_bg.png", "sunset_bg.png"):
+    title = CARD_DIR / "title_card.png"
+    with Image.open(title) as im:
+        if im.size != (640, 360):
+            problems.append(f"title_card.png: {im.size} != (640, 360)")
+        print(f"  {'title_card.png':<14} {im.size[0]}x{im.size[1]} {im.mode} "
+              f"opaque          {title.stat().st_size:>5} B  "
+              f"sha256:{sha16(title)}")
+    if title.stat().st_size > 150 * 1024:
+        problems.append(f"title_card.png: {title.stat().st_size} B > 150 KB")
+
+    for name in ("strip_bg.png", "sunset_bg.png", "wrangler_bg.png"):
         extra = BG_DIR / name
         with Image.open(extra) as im:
             if im.size != (1280, 720):
@@ -1347,6 +1733,14 @@ def main() -> None:
     sunset = BG_DIR / "sunset_bg.png"
     save_png(upscale(sunset_hq_scene(), 4), sunset)
     print(f"wrote {sunset.relative_to(ROOT)} ({sunset.stat().st_size} B)")
+
+    wrangler = BG_DIR / "wrangler_bg.png"
+    save_png(upscale(wrangler_scene(), 4), wrangler)
+    print(f"wrote {wrangler.relative_to(ROOT)} ({wrangler.stat().st_size} B)")
+
+    title = CARD_DIR / "title_card.png"
+    save_png(upscale(title_scene(), 2), title)
+    print(f"wrote {title.relative_to(ROOT)} ({title.stat().st_size} B)")
 
     problems = verify()
     if problems:

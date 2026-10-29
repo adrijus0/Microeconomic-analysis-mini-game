@@ -50,6 +50,7 @@
   var ANCHORS = { main: true };
 
   function route(event) {
+    if (root.SFX) root.SFX.closeGate();
     var id = idFromHash();
     if (event && ANCHORS[id]) return;
     if (root.Engine) root.Engine.stop();
@@ -97,8 +98,22 @@
 
   function boot() {
     if (root.FX) root.FX.ash();
+    if (root.SFX) root.SFX.mountToggle(byId("sound-toggle"));
     wireSkipLink();
-    route();
+    /* One power-on screen per visit: the title page's. The map types
+       nothing, so it never asks; sound picks up on the first tap there. A
+       page that types or sings as soon as it opens (a deal, or the Report
+       Card's ending) asks only if it was opened fresh (deep link, reload)
+       while sound is still locked; powerGate skips itself otherwise. */
+    var id = idFromHash();
+    var typesAtOnce = id === "report" || (CONFIG.encounterOrder || []).indexOf(id) !== -1;
+    if (typesAtOnce && root.SFX && root.FX && !root.FX.instant()) {
+      root.SFX.powerGate(byId("main"), function () {
+        route();
+      }, "power-gate--page");
+    } else {
+      route();
+    }
   }
 
   if (document.readyState === "loading") {

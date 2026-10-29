@@ -68,6 +68,10 @@
     return (n < 10 ? "0" : "") + n;
   }
 
+  function intText(n) {
+    return root.Engine.helpers.intText(n);
+  }
+
   /* New screen: move focus to its heading so it is announced. */
   function focusTitle(host) {
     var h = host.querySelector("h1");
@@ -84,7 +88,18 @@
   /* Map                                                                */
   /* ------------------------------------------------------------------ */
 
+  /* Timers of the Report Card's typed ending, cancelled on any re-render. */
+  var endingTimers = [];
+
+  function stopEnding() {
+    endingTimers.forEach(function (t) {
+      root.clearTimeout(t);
+    });
+    endingTimers = [];
+  }
+
   function renderMap(host) {
+    stopEnding();
     clear(host);
     var copy = CONFIG.map || {};
     var list = encounters();
@@ -115,30 +130,34 @@
       a.appendChild(body);
       var meta = el("span", "map-row__meta");
       meta.appendChild(el("span", "map-row__status", isDone ? "✓ Done" : "New"));
-      var slides = game.slides || (game.reveal && game.reveal.slide);
-      if (slides) {
-        var plural = /[–-]/.test(String(slides)) ? "Slides " : "Slide ";
-        meta.appendChild(el("span", "slide-ref", plural + slides));
-      }
       a.appendChild(meta);
       li.appendChild(a);
       ol.appendChild(li);
     });
     section.appendChild(ol);
 
+    /* The next unplayed deal is always one tap away; the Report Card sits
+       beside it once there is something to report. */
     var bar = el("div", "actionbar");
-    if (done > 0) {
-      var report = el("a", "btn btn--primary", (copy.reportCta || "Report Card") + " ▶");
-      report.href = "#report";
+    var nextIndex = -1;
+    list.forEach(function (g, i) {
+      if (nextIndex === -1 && !(saved[g.id] && saved[g.id].done)) nextIndex = i;
+    });
+    var reportLabel = (copy.reportCta || "Report Card") + (nextIndex === -1 ? " ▶" : "");
+    var report = el("a", "btn " + (nextIndex === -1 ? "btn--primary" : "btn--ghost"), reportLabel);
+    report.href = "#report";
+    if (nextIndex === -1) {
       bar.appendChild(report);
     } else {
-      var first = list[0];
-      if (first) {
-        var start = el("a", "btn btn--primary", "Start deal 01 ▶");
-        start.href = "#" + first.id;
-        bar.appendChild(start);
+      var start = el("a", "btn btn--primary", (done ? "Next deal " : "Start deal ") + pad(nextIndex + 1) + " ▶");
+      start.href = "#" + list[nextIndex].id;
+      bar.appendChild(start);
+      if (done > 0) {
+        bar.classList.add("actionbar--row");
+        bar.appendChild(report);
+      } else {
+        bar.appendChild(el("p", "hint", copy.reportLocked || ""));
       }
-      bar.appendChild(el("p", "hint", copy.reportLocked || ""));
     }
     section.appendChild(bar);
 
@@ -148,7 +167,7 @@
       reset.addEventListener("click", function () {
         var sure = true;
         try {
-          sure = root.confirm("Wipe all your answers from this Pip-Boy?");
+          sure = root.confirm("Wipe your answers and caps from this Pip-Boy?");
         } catch (err) {
           sure = true;
         }
@@ -174,7 +193,59 @@
     return ranks[Math.max(0, Math.min(ranks.length - 1, index))];
   }
 
+  /* S.P.E.C.I.A.L.-style bars: each played deal scores its chosen options
+     (CONFIG.games.<id>.special.points), clamped to 1–10. */
+  function statScore(game, record) {
+    var points = (game.special && game.special.points) || {};
+    var sum = 0;
+    var choices = (record && record.choices) || {};
+    Object.keys(choices).forEach(function (round) {
+      sum += Number(points[choices[round]]) || 0;
+    });
+    return Math.max(1, Math.min(10, sum));
+  }
+
+  function statsBlock(list, saved) {
+    var box = el("div", "special");
+    box.appendChild(el("p", "special__title", "Your S.P.E.C.I.A.L."));
+    list.forEach(function (game) {
+      var record = saved[game.id];
+      if (!game.special || !(record && record.done)) return;
+      var score = statScore(game, record);
+      var row = el("div", "special__row");
+      row.setAttribute("role", "img");
+      row.setAttribute("aria-label", game.special.label + ": " + score + " of 10");
+      row.appendChild(el("span", "special__label", game.special.label));
+      var bar = el("span", "special__bar");
+      for (var i = 1; i <= 10; i += 1) {
+        var cell = el("span", "special__cell" + (i <= score ? " is-on" : ""));
+        if (root.FX && !root.FX.instant()) cell.style.animationDelay = i * 40 + "ms";
+        bar.appendChild(cell);
+      }
+      row.appendChild(bar);
+      row.appendChild(el("span", "special__num", String(score)));
+      box.appendChild(row);
+    });
+    return box;
+  }
+
+  /* The perks unlocked so far, one per finished deal. */
+  function perksBlock(list, saved) {
+    var box = el("div", "perks");
+    box.appendChild(el("p", "special__title", "Perks"));
+    var grid = el("div", "perks__grid");
+    list.forEach(function (game) {
+      var record = saved[game.id];
+      if (!(record && record.done)) return;
+      var perk = root.Engine.helpers.perkOf(game, { crowdMatch: record.crowdMatch });
+      if (perk) grid.appendChild(root.Engine.helpers.perkCard(game, perk, false));
+    });
+    box.appendChild(grid);
+    return box;
+  }
+
   function renderReport(host) {
+    stopEnding();
     clear(host);
     var copy = CONFIG.report || {};
     var list = encounters();
@@ -210,20 +281,66 @@
     );
     if (root.FX) root.FX.glitch(title);
     card.appendChild(title);
+
+    /* Not done yet: say exactly what is left before the rank and ending. */
+    if (!complete) {
+      var left = list.filter(function (g) {
+        return !(saved[g.id] && saved[g.id].done);
+      });
+      var memo = el("p", "bet-memo report-left");
+      memo.appendChild(document.createTextNode("Your rank and the ending unlock after all " + list.length + " deals. Still to play: "));
+      left.forEach(function (g, i) {
+        var a = el("a", null, g.title);
+        a.href = "#" + g.id;
+        memo.appendChild(a);
+        if (i < left.length - 1) memo.appendChild(document.createTextNode(", "));
+      });
+      memo.appendChild(document.createTextNode("."));
+      card.appendChild(memo);
+    }
+
+    /* The journey's end: typed with clicks, then the ending tune. */
+    if (complete && copy.ending && root.FX) {
+      var ending = el("div", "report-ending");
+      card.appendChild(ending);
+      root.FX.typeLines(ending, [copy.ending], {
+        timers: endingTimers,
+        speed: 28,
+        delay: 700,
+        onDone: function () {
+          if (!ending.isConnected) return;
+          title.classList.add("is-crowned");
+          if (root.SFX) root.SFX.play("ending");
+        }
+      });
+    }
+
     card.appendChild(
       el(
         "p",
         "stage__lead",
-        "You chose like the crowd in " + matches + " of " + played.length +
+        "You chose like most people in " + matches + " of " + played.length +
           (complete ? " deals." : " deals so far. Play all " + list.length + " for your rank.")
       )
     );
+
+    if (root.GameStore && typeof root.GameStore.wallet === "function") {
+      var start = (CONFIG.wallet && CONFIG.wallet.start) || 100;
+      var wallet = el("p", "report-wallet");
+      wallet.appendChild(root.GameAssets.img("icon_caps", { className: "sprite sprite--pill", alt: "" }));
+      wallet.appendChild(el("strong", null, intText(root.GameStore.wallet()) + " caps"));
+      wallet.appendChild(el("span", null, "Wallet · started with " + intText(start)));
+      card.appendChild(wallet);
+    }
+
+    card.appendChild(statsBlock(list, saved));
+    card.appendChild(perksBlock(list, saved));
 
     var table = el("div", "rtable");
     table.setAttribute("role", "table");
     var head = el("div", "rtable__row rtable__row--head");
     head.setAttribute("role", "row");
-    ["Paradox", "You", "Crowd", "Breaks → fix"].forEach(function (h) {
+    ["Paradox", "You", "In studies", "Breaks → fix"].forEach(function (h) {
       var cell = el("span", "rtable__cell", h);
       cell.setAttribute("role", "columnheader");
       head.appendChild(cell);
@@ -246,7 +363,8 @@
       }
 
       var name = el("span", "rtable__name");
-      name.appendChild(el("strong", null, (game.reveal && game.reveal.name) || game.paradox));
+      var rep = game.report || {};
+      name.appendChild(el("strong", null, rep.name || (game.reveal && game.reveal.name) || game.paradox));
       cell("Paradox", name);
 
       if (r && r.done) {
@@ -261,8 +379,7 @@
         play.href = "#" + game.id;
         cell("You", play);
       }
-      cell("Crowd", (game.reveal && game.reveal.crowd) || "—");
-      var rep = game.report || {};
+      cell("In studies", (game.reveal && game.reveal.crowd) || "—");
       cell("Breaks → fix", (rep.breaks || "—") + " → " + (rep.fix || "—"));
       table.appendChild(row);
     });
@@ -271,10 +388,6 @@
     if (copy.closing) {
       var quote = el("blockquote", "takeaway");
       quote.appendChild(el("p", null, copy.closing));
-      var cite = el("footer", "takeaway__cite");
-      cite.appendChild(el("span", "slide-ref", "Slide 15"));
-      cite.appendChild(el("span", null, "From the lecture slides"));
-      quote.appendChild(cite);
       card.appendChild(quote);
     }
 
@@ -293,9 +406,6 @@
     card.appendChild(bar);
 
     host.appendChild(card);
-    host.appendChild(
-      el("p", "report-footnote", "Stored only on this device.")
-    );
     focusTitle(host);
   }
 

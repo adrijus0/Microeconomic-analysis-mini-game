@@ -98,6 +98,7 @@
       }
       charIndex += 1;
       t.node.textContent = t.text.slice(0, charIndex);
+      if (root.SFX && t.text.charAt(charIndex - 1) !== " ") root.SFX.play("type");
       t.node.parentNode.appendChild(caret);
       if (charIndex >= t.text.length) {
         lineIndex += 1;

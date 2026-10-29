@@ -18,8 +18,10 @@
  *   StPetersburgGame.maxPrice(w)       -> Bernoulli's maximum fee
  *   StPetersburgGame.wealthFor(p)      -> wealth at which p is the maximum fee
  *   StPetersburgGame.play(rng)         -> { flips, k, prize }
+ *   StPetersburgGame.init(rng, game, env) -> { wealth } from the caps wallet
  *   StPetersburgGame.resolve(...)      -> engine outcome for one fee
- *   StPetersburgGame.reveal(...)       -> short reveal summary
+ *   StPetersburgGame.reveal(choices, game, ctx) -> short reveal summary; the
+ *                                         player's own w is ctx.wealth
  */
 (function (root, factory) {
   "use strict";
@@ -37,7 +39,7 @@
 
   var TERMS = 400;      // 2^-400 of the tail is far below double precision
   var MAX_FLIPS = 30;   // display cap: P(more) = 2^-30
-  var COURIER = 100;    // the player's stake, as on slide 6
+  var COURIER = 100;    // slide 6's w, and the wallet's starting caps
   var HOUSE = 1000000;  // slide 6's w = 10^6, as Mr. House's bankroll
 
   /* Σ 2^-k log1p((2^k − p) / w): positive below the maximum fee. */
@@ -110,26 +112,18 @@
     return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   }
 
-  var SUPERSCRIPT = "⁰¹²³⁴⁵⁶⁷⁸⁹";
-
-  function superscript(n) {
-    return String(n).split("").map(function (d) {
-      return SUPERSCRIPT.charAt(Number(d));
-    }).join("");
-  }
-
-  /* 507 -> "507", 1.75e7 -> "17.5 million", 6.3e29 -> "6 × 10²⁹". */
-  function big(n) {
-    if (n < 1e6) return commas(n);
-    var names = [[1e15, null], [1e12, " trillion"], [1e9, " billion"], [1e6, " million"]];
-    for (var i = 1; i < names.length; i += 1) {
-      if (n >= names[i][0] && n < names[i - 1][0]) {
+  /* 507 -> "507 caps", 1.75e7 -> "17.5 million caps", and past the
+     trillions a size anyone can picture: "a 30-digit pile of caps". */
+  function fortune(n) {
+    if (n < 1e6) return commas(n) + " caps";
+    var names = [[1e12, " trillion"], [1e9, " billion"], [1e6, " million"]];
+    for (var i = 0; i < names.length; i += 1) {
+      if (n >= names[i][0] && n < names[i][0] * 1000) {
         var v = n / names[i][0];
-        return (v < 100 ? String(Math.round(v * 10) / 10) : commas(v)) + names[i][1];
+        return (v < 100 ? String(Math.round(v * 10) / 10) : commas(v)) + names[i][1] + " caps";
       }
     }
-    var e = Math.floor(Math.log10(n));
-    return Math.round(n / Math.pow(10, e)) + " × 10" + superscript(e);
+    return "a " + (Math.floor(Math.log10(n)) + 1) + "-digit pile of caps";
   }
 
   function two(n) {
@@ -151,6 +145,12 @@
     return fee;
   }
 
+  /* The wallet the player brings is their w (100 on a first run). */
+  function init(rng, game, env) {
+    var w = env ? Number(env.wallet) : NaN;
+    return { wealth: isFinite(w) && w > 0 ? w : COURIER };
+  }
+
   function resolve(round, option, ctx, rng) {
     var fee = Number(option.fee);
     var game = play(rng);
@@ -162,58 +162,62 @@
       fee: fee,
       net: net,
       heading: net > 0 ? "You beat the House!" : net === 0 ? "Even." : "The House wins.",
+      /* A receipt: the pot never depends on the fee. */
       copy:
-        "Tails on flip " + game.k + ": Victor pays " + commas(game.prize) + " caps. After your " +
-        fee + "-cap fee you " +
-        (net === 0
-          ? "break even."
-          : (net > 0 ? "are up " : "are down ") + commas(Math.abs(net)) + (Math.abs(net) === 1 ? " cap." : " caps."))
+        "Tails on flip " + game.k + ". Pot " + commas(game.prize) + " − fee " + fee + " = " +
+        (net > 0 ? "+" : net < 0 ? "−" : "") + commas(Math.abs(net)) + " caps."
     };
   }
 
-  function reveal(choices, game) {
+  function reveal(choices, game, ctx) {
     var round = (game.rounds || [])[0];
     var fee = feeOf(round, choices[round.id]);
+    var wealth = init(null, game, { wallet: ctx && ctx.wealth }).wealth;
     var courier = maxPrice(COURIER);
+    var mine = wealth === COURIER ? courier : maxPrice(wealth);
     var house = maxPrice(HOUSE);
-    var line;
-    if (fee <= courier) {
-      line = "You'd pay " + fee + " caps for an infinite expected prize — and Bernoulli agrees.";
-    } else {
-      var w = wealthFor(fee);
-      line =
-        "A " + fee + "-cap fee only makes sense if you own at least ~" + big(w) + " caps" +
-        (w > HOUSE ? " — " + big(w / HOUSE) + " times Mr. House's bankroll." : ".");
+    /* "Almost nobody pays more than a few": the crowd pays within
+       Bernoulli's bound for their own wallet, so one threshold drives the
+       stamp and the Report Card. */
+    var fair = fee <= mine;
+    var line = fair
+      ? "You paid " + fee + ": within what the toss is worth to you."
+      : "You paid " + fee + ". That only makes sense if you own " + fortune(wealthFor(fee)) + ".";
+    var math = [
+      {
+        label: "Expected prize",
+        tex: "E[\\text{prize}] = \\sum_{k\\ge 1} 2^{-k}\\cdot 2^{k} = 1 + 1 + \\cdots = \\infty"
+      },
+      {
+        label: "Bernoulli: the max fee p solves",
+        tex: "\\sum_{k=1}^{\\infty} 2^{-k}\\ln\\!\\left(w + 2^{k} - p\\right) = \\ln w"
+      },
+      {
+        label: "So",
+        tex: "p \\approx " + two(courier) + "\\ (w = 100),\\quad p \\approx " + two(house) + "\\ (w = 10^{6})"
+      }
+    ];
+    if (wealth !== COURIER) {
+      math.push({
+        label: "With your wallet",
+        tex: "p \\approx " + two(mine) + "\\ (w = " + commas(wealth).replace(/,/g, "{,}") + ")"
+      });
     }
     return {
-      you: fee + " caps",
-      /* "Almost nobody pays more than a few": the crowd pays within
-         Bernoulli's bound, so one threshold drives the stamp and the card. */
-      crowdMatch: fee <= courier,
-      consistent: fee <= courier,
-      stamp: fee <= courier
+      you: "Paid " + fee + " caps",
+      crowdMatch: fair,
+      consistent: fair,
+      stamp: fair
         ? { text: "Bernoulli-approved", tone: "green" }
         : { text: "High roller", tone: "amber" },
       line: line,
+      /* Why: the average is endless, yet the toss is worth little. */
       tiles: [
-        { label: "Expected prize", value: "∞ caps" },
-        { label: "Courier's max fee", value: two(courier) + " caps", note: "with 100 caps", mine: true },
-        { label: "Mr. House's max fee", value: two(house) + " caps", note: "with a 1,000,000-cap bankroll" }
+        { label: "Average prize", value: "∞ caps", note: "each flip adds 1 cap, forever" },
+        { label: "Worth to you", value: two(mine) + " caps", note: "with " + commas(wealth) + " caps", mine: true },
+        { label: "Worth to Mr. House", value: two(house) + " caps", note: "with 1M caps" }
       ],
-      math: [
-        {
-          label: "Expected prize",
-          tex: "E[\\text{prize}] = \\sum_{k\\ge 1} 2^{-k}\\cdot 2^{k} = 1 + 1 + \\cdots = \\infty"
-        },
-        {
-          label: "Bernoulli: the max fee p solves",
-          tex: "\\sum_{k=1}^{\\infty} 2^{-k}\\ln\\!\\left(w + 2^{k} - p\\right) = \\ln w"
-        },
-        {
-          label: "So",
-          tex: "p \\approx " + two(courier) + "\\ (w = 100),\\quad p \\approx " + two(house) + "\\ (w = 10^{6})"
-        }
-      ]
+      math: math
     };
   }
 
@@ -221,7 +225,8 @@
     maxPrice: maxPrice,
     wealthFor: wealthFor,
     play: play,
-    big: big,
+    fortune: fortune,
+    init: init,
     resolve: resolve,
     reveal: reveal
   };

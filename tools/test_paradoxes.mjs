@@ -1,6 +1,7 @@
 /*
- * test_paradoxes.mjs — checks for the St. Petersburg and Ellsberg logic and
- * for the shape of every encounter in docs/config.js.
+ * test_paradoxes.mjs — checks for the St. Petersburg and Ellsberg logic, the
+ * caps wallet in docs/js/store.js, the shape of every encounter in
+ * docs/config.js, and a copy budget that keeps phone screens short.
  *
  * Run from the repository root:
  *   node tools/test_paradoxes.mjs
@@ -69,9 +70,9 @@ order.forEach((id) => {
         const total = option.lottery.reduce((sum, part) => sum + part.p, 0);
         near(id + "/" + option.id + " lottery sums to 1", total, 1, 1e-9);
       }
-      if (option.segments) {
-        const total = option.segments.reduce((sum, seg) => sum + seg.n, 0);
-        ok(id + "/" + option.id + " segments cover 90 caps", total === 90, "total " + total);
+      if (option.wins) {
+        const kinds = option.wins.filter((k) => ["nuka", "star", "plain"].includes(k));
+        ok(id + "/" + option.id + " wins only on known cap kinds", kinds.length === option.wins.length && kinds.length > 0);
       }
       if (option.sprite) {
         ok(id + "/" + option.id + " sprite is registered", !!CONFIG.assets[option.sprite]);
@@ -86,6 +87,88 @@ order.forEach((id) => {
 Object.keys(CONFIG.assets).forEach((key) => {
   ok("asset " + key + " file exists", existsSync(resolve(root, "docs", CONFIG.assets[key].file)));
 });
+
+/* --------------------------------------------------------- copy budget */
+
+/* Nobody reads much on a phone: these limits keep the game screens short.
+   The "Show the math" notes are opt-in and not budgeted. */
+const words = (text) => String(text || "").split(/\s+/).filter((w) => /[\p{L}\p{N}]/u.test(w)).length;
+function budget(label, text, max) {
+  const n = words(text);
+  ok(label + " ≤ " + max + " words", n <= max, n + " words: " + JSON.stringify(text));
+}
+budget("landing lead", CONFIG.landing.lead, 12);
+order.forEach((id) => {
+  const game = CONFIG.games[id];
+  if (!game) return;
+  budget(id + " hook", game.hook, 8);
+  budget(id + " scene lines", (game.scene.lines || []).join(" "), 30);
+  if (game.beat) budget(id + " beat", (game.beat.lines || []).join(" "), 12);
+  budget(id + " takeaway", game.reveal.takeaway, 16);
+  budget(id + " crowd", game.reveal.crowd, 8);
+  (game.rounds || []).forEach((round) => {
+    budget(id + "/" + round.id + " prompt", round.prompt, 10);
+    (round.options || []).forEach((option) => {
+      budget(id + "/" + option.id + " label", option.label, 4);
+      if (option.note) budget(id + "/" + option.id + " note", option.note, 8);
+    });
+  });
+});
+
+/* ---------------------------------------------------------- caps wallet */
+
+{
+  const events = [];
+  const win = {
+    CONFIG,
+    CustomEvent: function (type, init) { this.type = type; this.detail = init && init.detail; },
+    dispatchEvent: (e) => events.push(e)
+  };
+  const box = { window: win };
+  vm.createContext(box);
+  vm.runInContext(readFileSync(resolve(root, "docs/js/store.js"), "utf8"), box);
+  const S = win.GameStore;
+  const last = () => events[events.length - 1].detail;
+  ok("wallet starts at CONFIG.wallet.start (100)", S.wallet() === 100 && CONFIG.wallet.start === 100);
+
+  S.beginRun("stpetersburg");
+  S.runCaps("fee", -10);
+  ok("the fee leaves the wallet on lock-in", S.wallet() === 90 && last().to === 90 && !last().quiet);
+  S.runCaps("fee", 8 - 10, { delay: 650 });
+  ok("the prize replaces the fee with the net", S.wallet() === 98 && last().delay === 650);
+  S.commitRun();
+  ok("the reveal commits the run", S.wallet() === 98 && S.walletExcept("stpetersburg") === 100);
+
+  S.beginRun("allais");
+  S.runCaps("r1", 2400);
+  S.runCaps("r2", 2500);
+  S.commitRun();
+  ok("Allais adds both jobs", S.wallet() === 98 + 4900);
+
+  /* Replay: old caps set aside quietly, then the new run counts live. */
+  const before = events.length;
+  S.beginRun("allais");
+  ok("a replay sets the old caps aside quietly", S.wallet() === 98 && last().quiet === true);
+  S.runCaps("r1", 2400);
+  ok("a replay win floats green, not red", last().to - last().from === 2400 && events.length === before + 2);
+  S.cancelRun();
+  ok("leaving a replay early restores the old caps", S.wallet() === 98 + 4900 && last().quiet === true);
+
+  S.beginRun("allais");
+  S.runCaps("r1", 0);
+  S.runCaps("r2", 0);
+  S.commitRun();
+  ok("a finished replay replaces the deal's caps (no farming)", S.wallet() === 98);
+
+  S.beginRun("ellsberg");
+  S.runCaps("fee", -5);
+  S.cancelRun();
+  ok("an unfinished first run leaves the wallet as it was", S.wallet() === 98);
+  ok("every change fires wallet:change", events.every((e) => e.type === "wallet:change"));
+  ok("all() hides the wallet's reserved key", !Object.keys(S.all()).some((k) => k.charAt(0) === "_"));
+  S.clear();
+  ok("wiping the Pip-Boy resets the wallet to 100", S.wallet() === 100);
+}
 
 /* ---------------------------------------------------- St. Petersburg */
 
@@ -134,6 +217,17 @@ if (existsSync(stpPath)) {
       ok("fee " + fee + " crowdMatch is " + (fee <= 7.79), r.crowdMatch === (fee <= 7.79));
       ok("fee " + fee + " line has no TeX", !/\\/.test(r.line));
     });
+    /* Live wallet: with 2,500 caps Bernoulli's bound rises to ≈ 12.25. */
+    near("init() takes w from the wallet", S.init(null, game, { wallet: 2500 }).wealth, 2500, 0);
+    ok("init() falls back to slide 6's w = 100", S.init(null, game, {}).wealth === 100);
+    near("maxPrice(2,500)", S.maxPrice(2500), 12.25, 0.01);
+    const rich = S.reveal({ [round.id]: "f10" }, game, { wealth: 2500 });
+    ok("10 caps is fair with 2,500 caps", rich.stamp.tone === "green" && rich.crowdMatch === true);
+    ok("the reveal tile names the wallet", rich.tiles[1].note.includes("2,500") && rich.tiles[1].value.startsWith("12.2"));
+    ok("the math keeps slide 6's numbers and adds yours",
+      rich.math.length === 4 && rich.math[2].tex.includes("7.79") && rich.math[3].tex.includes("12.2"));
+    const poor = S.reveal({ [round.id]: "f10" }, game, { wealth: 100 });
+    ok("10 caps is a high roller with 100 caps", poor.stamp.tone === "amber" && poor.math.length === 3);
   }
 }
 
@@ -177,20 +271,32 @@ if (existsSync(ellPath)) {
     ok(pattern + " crowdMatch = " + want.crowd, r.crowdMatch === want.crowd);
     ok(pattern + " stamp tone", r.stamp.tone === (want.consistent ? "green" : "red"));
     ok(pattern + " contradiction ⊥ only when inconsistent", r.math[2].tex.includes("\\bot") === !want.consistent);
-    ok(pattern + " chain has 3 steps", r.chain.length === 3);
-    ok(pattern + " chain ends right", want.consistent
-      ? !r.chain[2].includes("No belief")
-      : r.chain[2].includes("No belief fits both"), r.chain[2]);
+    ok(pattern + " chain tells bet 1, then bet 2", r.chain.length === 2 && r.chain[1].startsWith("Bet 2"));
+    ok(pattern + " stayed/switched matches consistency", want.consistent
+      ? r.chain[1].includes("You stayed with")
+      : r.chain[1].includes("You switched to"), r.chain[1]);
   });
 
   {
     const r = E.reveal({ [game.rounds[0].id]: "I", [game.rounds[1].id]: "IV" }, game, null);
-    ok("I+IV bet 1 needs π_N > π_S", r.math[0].tex === "\\pi_N > \\pi_S", r.math[0].tex);
+    ok("I+IV bet 1 needs π_R > π_S", r.math[0].tex === "\\pi_R > \\pi_S", r.math[0].tex);
     ok("I+IV bet 2 shows the slide 12 form",
-      r.math[1].tex === "\\pi_S + \\pi_P > \\pi_N + \\pi_P \\Rightarrow \\pi_S > \\pi_N", r.math[1].tex);
-    ok("I+IV step 3 compares over 60 with exactly 60",
-      r.chain[2].includes("III (over 60)") && r.chain[2].includes("IV (exactly 60)"), r.chain[2]);
+      r.math[1].tex === "\\pi_S + \\pi_P > \\pi_R + \\pi_P \\Rightarrow \\pi_S > \\pi_R", r.math[1].tex);
+    ok("I+IV says the known odds won like most people", r.line.includes("known odds") && r.line.includes("most people"), r.line);
   }
+
+  ok("known(): I and IV have known odds, II and III do not",
+    E.known(BETS.I) && !E.known(BETS.II) && !E.known(BETS.III) && E.known(BETS.IV));
+
+  /* The cards' win chances come from `wins`: 33%, 0–67%, 33–100%, 67%. */
+  const want = { I: [33, 33], II: [0, 67], III: [33, 100], IV: [67, 67] };
+  Object.keys(BETS).forEach((id) => {
+    const c = E.chance(BETS[id]);
+    ok(id + " win chance is " + want[id].join("–") + "%", c.lo === want[id][0] && c.hi === want[id][1], JSON.stringify(c));
+  });
+  ok("bet 2 mirrors bet 1 plus plain yellow",
+    game.rounds[1].options.every((o, i) =>
+      o.wins.filter((k) => k !== "plain").join() === game.rounds[0].options[i].wins.join() && o.wins.includes("plain")));
 
   /* Renamed ids give the same verdicts: nothing matches on "I" or "IV". */
   const renamed = JSON.parse(JSON.stringify(game));
@@ -222,6 +328,62 @@ if (existsSync(ellPath)) {
   ok("resolveAll keeps one barrel on ctx when it was missing", !!ctxMissing.mix);
   ok("the game draws once, after bet 2", game.resolveAtEnd === true || game === fixture);
 }
+
+/* ------------------------------------------------------ Loss aversion */
+
+const laPath = resolve(root, "docs/js/games/lossaversion.js");
+if (existsSync(laPath)) {
+  const L = require(laPath);
+  const game = CONFIG.games.lossaversion;
+  const round = game.rounds[0];
+  const flip = round.options.find((o) => o.id === "F");
+  /* Slide 13: lose 100 or win 110, expected gain +5. */
+  near("the flip's expected gain (slide 13)", L.ev(flip.lottery), 5, 1e-9);
+  /* Slide 14: α = β = 0.88, λ = 2.25, γ = 0.61. */
+  near("w(1/2) with γ = 0.61", L.w(0.5), 0.4206, 0.0005);
+  near("prospect value of the flip", L.ptValue(flip.lottery), -28.14, 0.01);
+  ok("v(−100) = −2.25 · 100^0.88", Math.abs(L.v(-100) + 2.25 * 100 ** 0.88) < 1e-9);
+  const walk = L.reveal({ flip: "W" }, game);
+  const took = L.reveal({ flip: "F" }, game);
+  ok("walking away matches most people", walk.crowdMatch === true && walk.stamp.tone === "red");
+  ok("flipping takes the edge", took.crowdMatch === false && took.stamp.tone === "green");
+  ok("the reveal shows +5, 2.25× and the felt value", walk.tiles[0].value === "+5 caps" &&
+    walk.tiles[1].value === "2.25×" && walk.tiles[2].value === "-28");
+  for (let i = 0; i < 20; i += 1) {
+    const o = L.resolve(round, flip, {}, RNG.create("la|" + i));
+    const w = L.resolve(round, round.options.find((x) => x.id === "W"), {}, RNG.create("la|" + i));
+    if (!((o.face === "H" ? o.payoff === 110 : o.payoff === -100) && w.payoff === 0 && w.face === o.face)) {
+      ok("resolve seed " + i + " pays heads +110 / tails −100, walking pays 0", false, JSON.stringify([o, w]));
+      break;
+    }
+    if (i === 19) ok("resolve pays heads +110 / tails −100, walking pays 0 (20 seeds)", true);
+  }
+}
+
+/* -------------------------------------------------- stats and perks */
+
+ok("one rank per possible match count (0 … " + order.length + ")", CONFIG.report.ranks.length === order.length + 1);
+ok("the Report Card has an ending line", typeof CONFIG.report.ending === "string" && CONFIG.report.ending.length > 0);
+order.forEach((id) => {
+  const game = CONFIG.games[id];
+  if (!game || !game.perks) return;
+  ok(id + " perk names differ from its stamps",
+    !["crowd", "other"].some((k) => /^(high roller|loss averse)$/i.test(game.perks[k].name)));
+  const fees = game.rounds.flatMap((r) => r.options).map((o) => Math.max(Number(o.fee) || 0,
+    -Math.min(0, ...(o.lottery || []).map((p) => p.x))));
+  const worst = Math.max(0, ...fees);
+  ok(id + " stakes cover its worst loss (" + worst + ")", worst === 0 || Number(game.stake) >= worst);
+});
+
+order.forEach((id) => {
+  const game = CONFIG.games[id];
+  if (!game) return;
+  const ids = game.rounds.flatMap((r) => r.options.map((o) => o.id));
+  ok(id + " gives every option S.P.E.C.I.A.L. points",
+    !!game.special && ids.every((o) => Number.isFinite(game.special.points[o])));
+  ok(id + " has both perks", !!(game.perks && game.perks.crowd && game.perks.other &&
+    game.perks.crowd.name && game.perks.other.text));
+});
 
 /* ----------------------------------------------------------- summary */
 

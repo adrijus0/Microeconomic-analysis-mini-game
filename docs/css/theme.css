@@ -147,18 +147,6 @@ h4 {
   text-shadow: 0 0 6px rgba(255, 176, 0, 0.35);
 }
 
-kbd {
-  display: inline-block;
-  min-width: 24px;
-  padding: 1px 5px;
-  border: 1px solid var(--pip-green-line);
-  border-bottom-width: 2px;
-  background: rgba(18, 255, 18, 0.08);
-  color: var(--pip-green-ink);
-  font-family: var(--font-body);
-  font-size: 12px;
-  text-align: center;
-}
 
 .visually-hidden {
   position: absolute !important;
@@ -442,7 +430,95 @@ kbd {
 }
 
 .terminal__screen {
+  position: relative;
   padding: 22px 20px 24px;
+}
+
+.terminal__bar-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* "Tap to power on": browsers only allow sound after a tap, so with sound
+   on the dark CRT waits for one, then boots with its hum and ticks. */
+.power-gate {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 260px;
+  padding: 20px;
+  border: 0;
+  background: radial-gradient(circle at 50% 45%, #062006 0%, #020802 70%);
+  color: var(--pip-green);
+  font-family: var(--font-pixel);
+  font-size: 12px;
+  line-height: 1.8;
+  text-transform: uppercase;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* On the game page the screen sits in the page flow under the top bar. */
+.power-gate--page {
+  position: relative;
+  min-height: 70vh;
+  border: 1px solid var(--pip-green-line);
+}
+
+.power-gate__icon {
+  font-size: 28px;
+  text-shadow: 0 0 14px rgba(18, 255, 18, 0.7);
+  animation: gate-pulse 1.4s ease-in-out infinite;
+}
+
+.power-gate__hint {
+  color: var(--pip-green-soft);
+  font-family: var(--font-body);
+  font-size: 12px;
+  text-transform: none;
+}
+
+@keyframes gate-pulse {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 1; }
+}
+
+/* The sound switch, the same on every page. It says its state in words:
+   "♪ Sound on" lit green, "♪ Sound off" dim. */
+.sound-toggle {
+  flex: none;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--pip-green-dim);
+  background: transparent;
+  color: var(--pip-green-soft);
+  font-family: var(--font-pixel);
+  font-size: 8px;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sound-toggle.is-on {
+  border-color: var(--pip-green);
+  background: var(--pip-green);
+  color: #021002;
+  box-shadow: 0 0 10px rgba(18, 255, 18, 0.4);
+}
+
+.sound-toggle:focus-visible {
+  outline: 2px solid var(--rad-amber);
+  outline-offset: 2px;
 }
 
 .terminal__boot {
@@ -493,6 +569,10 @@ kbd {
   box-shadow: inset 0 0 22px rgba(18, 255, 18, 0.08);
 }
 
+.terminal__art {
+  position: relative;
+}
+
 .terminal__art img {
   display: block;
   width: 100%;
@@ -500,6 +580,60 @@ kbd {
   border: 1px solid var(--pip-green-dim);
   filter: saturate(0.82) contrast(1.04);
   image-rendering: pixelated;
+}
+
+/* Glows over the title card. left/width are fractions of the art's width
+   (x / 320), top/height of its height (y / 180); 6px is the frame padding. */
+.art-fx {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 50%;
+  mix-blend-mode: screen;
+}
+
+.art-fx--cloud {
+  left: calc(6px + (100% - 12px) * 0.613);
+  top: calc(6px + (100% - 12px) * 0.078);
+  width: calc((100% - 12px) * 0.225);
+  aspect-ratio: 1;
+  background: radial-gradient(circle, rgba(255, 190, 110, 0.55) 0%, rgba(255, 120, 60, 0.18) 45%, transparent 70%);
+  animation: cloud-pulse 3.2s ease-in-out infinite;
+}
+
+.art-fx--beacon {
+  left: calc(6px + (100% - 12px) * 0.359);
+  top: calc(6px + (100% - 12px) * 0.108);
+  width: calc((100% - 12px) * 0.031);
+  aspect-ratio: 1;
+  background: radial-gradient(circle, rgba(255, 90, 70, 0.95) 0%, rgba(255, 60, 50, 0.3) 50%, transparent 72%);
+  animation: beacon-blink 1.6s steps(1, end) infinite;
+}
+
+.art-fx--screen {
+  left: calc(6px + (100% - 12px) * 0.425);
+  top: calc(6px + (100% - 12px) * 0.822);
+  width: calc((100% - 12px) * 0.106);
+  height: calc((100% - 12px) * 0.111);
+  border-radius: 2px;
+  background: rgba(150, 255, 140, 0.22);
+  animation: screen-flicker 2.4s steps(4, end) infinite;
+}
+
+@keyframes cloud-pulse {
+  0%, 100% { opacity: 0.55; transform: scale(0.94); }
+  50% { opacity: 1; transform: scale(1.06); }
+}
+
+@keyframes beacon-blink {
+  0%, 60% { opacity: 1; }
+  61%, 100% { opacity: 0.15; }
+}
+
+@keyframes screen-flicker {
+  0%, 100% { opacity: 0.6; }
+  30% { opacity: 1; }
+  55% { opacity: 0.35; }
+  80% { opacity: 0.85; }
 }
 
 .terminal__actions {
@@ -568,16 +702,6 @@ kbd {
       0 0 34px rgba(18, 255, 18, 0.55),
       0 5px 0 #063006;
   }
-}
-
-.terminal__foot {
-  padding: 10px 14px;
-  border-top: 1px solid var(--pip-green-line);
-  color: var(--pip-green-soft);
-  font-size: 10px;
-  line-height: 1.5;
-  letter-spacing: 0.06em;
-  text-align: center;
 }
 
 /* --------------------------------------------------------------------------

@@ -5,7 +5,8 @@
  *   scene → (choice → resolve → [beat]) × rounds → reveal
  * and leaves the paradox-specific maths to the module named in game.logic
  * (window.AllaisGame, …). A module may provide:
- *   init(rng, game)                    -> per-run context (e.g. a hidden mix)
+ *   init(rng, game, env)               -> per-run context (e.g. a hidden mix);
+ *                                         env.wallet = caps brought to the deal
  *   resolve(round, option, ctx, rng)   -> { payoff, … } for the outcome draw
  *   resolveAll(rounds, choices, ctx, rng) -> one draw that settles every
  *                                         round (games with resolveAtEnd)
@@ -15,6 +16,11 @@
  * so an early draw can never leak information into a later choice.
  *
  * Outcome animations are "props" (chest, …) registered in PROPS below.
+ *
+ * Caps wallet: each mount starts a GameStore run. An option's `fee` is paid
+ * on lock-in and each resolved round's net (outcome.net, else
+ * outcome.payoff) is staged; the reveal commits the run, replacing the deal's
+ * old caps (no farming on replays). Leaving early drops the run.
  * Works from file:// and under a GitHub Pages sub-path. Classic script.
  */
 (function (root) {
@@ -41,7 +47,8 @@
 
   function intText(value) {
     var n = Math.round(Number(value) || 0);
-    var sign = n < 0 ? "−" : "";
+    /* ASCII minus: Press Start 2P has no U+2212 glyph. */
+    var sign = n < 0 ? "-" : "";
     return sign + String(Math.abs(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   }
 
@@ -52,6 +59,11 @@
   function pct(p) {
     var value = Math.round((Number(p) || 0) * 1000) / 10;
     return String(value).replace(/\.0$/, "") + "%";
+  }
+
+  /* 8-bit sound (sfx.js); silent unless the player turned it on. */
+  function sfx(name) {
+    if (root.SFX) root.SFX.play(name);
   }
 
   function setStatus(state, message) {
@@ -199,28 +211,18 @@
   /* Lottery presentation                                               */
   /* ------------------------------------------------------------------ */
 
-  /*
-   * Bar segments for an option. Cap lotteries ({p, x}) are coloured by payoff;
-   * display segments ({n, of, kind}) cover bets whose odds are partly unknown.
-   */
+  /* Bar segments for a cap lottery ({p, x}), coloured by payoff. A
+     lottery that can lose shows signed amounts (+110 / −100). */
   function segmentsOf(state, option) {
-    if (option.segments) {
-      return option.segments.map(function (seg) {
-        var p = Number(seg.n) / Number(seg.of || 90);
-        var of = seg.of || 90;
-        var unknown = seg.kind === "unknown";
-        return {
-          p: p,
-          cls: "lot-seg--" + (seg.kind || "lose"),
-          barText: unknown ? "?" : seg.n + "/" + of,
-          /* Unknown odds read as a range, never as a known share. */
-          row: [(seg.range || (unknown ? "0–" + seg.n : seg.n)) + "/" + of, seg.text || ""]
-        };
-      });
-    }
-    return (option.lottery || []).map(function (part) {
+    var lottery = option.lottery || [];
+    var signed = lottery.some(function (part) {
+      return Number(part.x) < 0;
+    });
+    return lottery.map(function (part) {
       var x = Number(part.x);
-      var cls = x === 0
+      var cls = x < 0
+        ? "lot-seg--loss"
+        : x === 0
         ? "lot-seg--zero"
         : x === state.maxPayoff
         ? "lot-seg--high"
@@ -229,7 +231,7 @@
         p: Number(part.p),
         cls: cls,
         barText: pct(part.p),
-        row: [pct(part.p), caps(x)]
+        row: [pct(part.p), (signed && x > 0 ? "+" : "") + caps(x)]
       };
     });
   }
@@ -280,7 +282,11 @@
     head.appendChild(titles);
     card.appendChild(head);
 
-    if (option.lottery || option.segments) {
+    /* A prop may draw its own picture of the odds (Festus's barrel). */
+    var prop = PROPS[state.game.prop] || {};
+    if (prop.optionVisual) {
+      card.appendChild(prop.optionVisual(state, option));
+    } else if (option.lottery) {
       card.appendChild(lotteryBar(state, option));
       card.appendChild(lotteryList(state, option));
     }
@@ -330,9 +336,6 @@
 
     var bar = el("div", "game__bar");
     bar.appendChild(el("span", "game__title", game.title));
-    var seed = el("span", "game__seed", "seed " + state.seed);
-    seed.title = "Add ?seed=" + state.seed + " to the URL to repeat these draws";
-    bar.appendChild(seed);
     shell.appendChild(bar);
 
     var steps = el("ol", "game__steps");
@@ -434,6 +437,9 @@
     var copy = el("div", "stage__copy dialogue");
     node.appendChild(copy);
     var typing = FX.typeLines(copy, scene.lines || [], { timers: state.timers });
+    /* A prop may explain its setup before the first choice. */
+    var prop = PROPS[game.prop] || {};
+    if (prop.sceneExtra) prop.sceneExtra(state, node);
     node.addEventListener("click", function (event) {
       if (event.target.closest("button")) return;
       typing.finish();
@@ -469,9 +475,12 @@
     var node = panel(state, "choice");
     node.setAttribute("data-round", round.id);
 
-    node.appendChild(el("p", "eyebrow", round.kicker || round.stepLabel || ""));
-    node.appendChild(el("h2", "stage__title", round.prompt));
-    if (round.intro) node.appendChild(el("p", "stage__lead", round.intro));
+    node.appendChild(el("p", "eyebrow", fill(state, round.kicker || round.stepLabel || "")));
+    node.appendChild(el("h2", "stage__title", fill(state, round.prompt)));
+    if (state.spotted && state.roundIndex === 0 && state.game.stakeNote) {
+      node.appendChild(el("p", "bet-memo", fill(state, state.game.stakeNote)));
+    }
+    if (round.intro) node.appendChild(el("p", "stage__lead", fill(state, round.intro)));
     if (prop.choiceHeader) prop.choiceHeader(state, node, round);
 
     var chips = round.layout === "chips";
@@ -484,10 +493,6 @@
     node.appendChild(group);
 
     var bar = actionbar();
-    var hint = el("p", "hint hint--keys");
-    hint.innerHTML =
-      "Keys <kbd>1</kbd>–<kbd>" + (round.options || []).length + "</kbd> pick · <kbd>Enter</kbd> locks";
-    bar.appendChild(hint);
     var lock = button("Pick one", "btn--primary btn--lock", function () {
       lockChoice(state);
     });
@@ -497,6 +502,25 @@
     state.lockButton = lock;
 
     show(state, node, "round-" + state.roundIndex, round.prompt);
+  }
+
+  /* "{wallet}" in round copy becomes the caps brought to this deal. */
+  function fill(state, text) {
+    return String(text == null ? "" : text).replace(/\{wallet\}/g, intText(state.wallet));
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Caps wallet                                                        */
+  /* ------------------------------------------------------------------ */
+
+  function stageCaps(round, net, delay) {
+    var store = root.GameStore;
+    if (store && typeof store.runCaps === "function") store.runCaps(round.id, net, { delay: delay || 0 });
+  }
+
+  function walletText() {
+    var store = root.GameStore;
+    return store && typeof store.wallet === "function" ? " Wallet: " + caps(store.wallet()) + "." : "";
   }
 
   function optionById(round, id) {
@@ -510,6 +534,7 @@
   function selectOption(state, optionId) {
     if (state.locked) return;
     state.selected = optionId;
+    sfx("select");
     Array.prototype.forEach.call(state.stageHost.querySelectorAll(".option"), function (node) {
       var on = node.getAttribute("data-option") === optionId;
       node.classList.toggle("is-selected", on);
@@ -535,6 +560,9 @@
     state.locked = true;
     state.choices[round.id] = chosen.id;
     FX.buzz(20);
+    sfx("lock");
+    /* Pay to play: the fee leaves the wallet before the outcome is known. */
+    if (Number(chosen.fee) > 0) stageCaps(round, -Number(chosen.fee));
 
     var logic = logicFor(state.game);
     var last = state.roundIndex === state.game.rounds.length - 1;
@@ -604,6 +632,8 @@
       var won = outcome.net != null ? outcome.net >= 0 : Number(outcome.payoff) > 0;
       var after = outcome.heading || (won ? resolve.winHeading : resolve.loseHeading);
       if (after) heading.textContent = after;
+      /* No jingle when nothing changed (walking away, breaking even). */
+      if (outcome.net !== 0) sfx(won ? "win" : "lose");
       result.hidden = false;
       result.classList.toggle("is-lose", !won);
       if (!FX.instant()) result.classList.add("flicker-in");
@@ -611,8 +641,10 @@
         format: caps,
         timers: state.timers
       });
+      /* Staged now; the wallet pill animates once this count-up lands. */
+      stageCaps(round, outcome.net != null ? outcome.net : Number(outcome.payoff) || 0, FX.instant() ? 0 : 650);
       next.disabled = false;
-      setStatus(state, "Outcome: " + caps(outcome.payoff) + ". " + line.textContent);
+      setStatus(state, "Outcome: " + caps(outcome.payoff) + ". " + line.textContent + walletText());
       try {
         next.focus({ preventScroll: true });
       } catch (err) {
@@ -712,10 +744,6 @@
     }
   }
 
-  function slideTag(n) {
-    return el("span", "slide-ref", "Slide " + n);
-  }
-
   function figureSVG(name) {
     var F = root.Figures || {};
     if (name === "triangle" && F.triangleSVG) return F.triangleSVG();
@@ -723,9 +751,9 @@
     return "";
   }
 
-  var FIGURE_CAPTIONS = {
-    triangle: { slide: 8, title: "The probability triangle" },
-    weighting: { slide: 14, title: "Probability weighting" }
+  var FIGURE_TITLES = {
+    triangle: "The probability triangle",
+    weighting: "Probability weighting"
   };
 
   function mathBox(state, reveal, summary) {
@@ -746,12 +774,8 @@
     (reveal.figures || []).forEach(function (name) {
       var svg = figureSVG(name);
       if (!svg) return;
-      var meta = FIGURE_CAPTIONS[name] || {};
       var fig = el("figure", "figure");
-      var cap = el("figcaption", "figure__title");
-      if (meta.slide) cap.appendChild(slideTag(meta.slide));
-      cap.appendChild(el("span", null, meta.title || ""));
-      fig.appendChild(cap);
+      fig.appendChild(el("figcaption", "figure__title", FIGURE_TITLES[name] || ""));
       var host = el("div", "figure__host");
       host.innerHTML = svg;
       fig.appendChild(host);
@@ -761,19 +785,37 @@
     });
 
     (reveal.notes || []).forEach(function (note) {
-      var p = el("p", "mathbox__note");
-      if (note.slide) p.appendChild(slideTag(note.slide));
-      p.appendChild(document.createTextNode(" " + note.text));
-      body.appendChild(p);
+      body.appendChild(el("p", "mathbox__note", note.text));
     });
 
     if (reveal.crowdSource) {
-      body.appendChild(el("p", "mathbox__source", "Crowd data: " + reveal.crowdSource + "."));
+      body.appendChild(el("p", "mathbox__source", "Study: " + reveal.crowdSource + "."));
     }
 
     details.appendChild(body);
     lazyMath(details);
     return details;
+  }
+
+  /* The perk a finished deal unlocks: one for choosing like most people,
+     one for the rest (CONFIG.games.<id>.perks). */
+  function perkOf(game, summary) {
+    if (!game.perks || !summary || summary.crowdMatch == null) return null;
+    return game.perks[summary.crowdMatch ? "crowd" : "other"] || null;
+  }
+
+  /* A Fallout-style perk card with the deal's NPC as its art. */
+  function perkCard(game, perk, fresh) {
+    var card = el("div", "perk" + (fresh && !FX.instant() ? " perk--new" : ""));
+    var art = el("span", "perk__art");
+    art.appendChild(root.GameAssets.img(game.scene && game.scene.sprite, { className: "sprite sprite--perk", alt: "" }));
+    card.appendChild(art);
+    var body = el("span", "perk__body");
+    if (fresh) body.appendChild(el("span", "perk__kicker", "Perk unlocked"));
+    body.appendChild(el("strong", "perk__name", perk.name));
+    body.appendChild(el("span", "perk__text", perk.text));
+    card.appendChild(body);
+    return card;
   }
 
   function showReveal(state) {
@@ -788,18 +830,17 @@
         crowdMatch: summary ? !!summary.crowdMatch : null,
         consistent: summary ? summary.consistent : null,
         stamp: summary ? summary.stamp : null,
-        choices: state.choices,
-        seed: state.seed
+        choices: state.choices
       });
+    }
+    /* The result and its caps land together: the deal is done and paid. */
+    if (root.GameStore && typeof root.GameStore.commitRun === "function") {
+      root.GameStore.commitRun();
+      state.committed = true;
     }
 
     var node = panel(state, "reveal");
-    var eyebrow = el("p", "eyebrow", "Reveal");
-    if (reveal.slide) {
-      eyebrow.appendChild(document.createTextNode(" · "));
-      eyebrow.appendChild(slideTag(reveal.slide));
-    }
-    node.appendChild(eyebrow);
+    node.appendChild(el("p", "eyebrow", "Reveal"));
     var heading = el("h1", "stage__title reveal__name", reveal.name || game.paradox);
     FX.glitch(heading);
     node.appendChild(heading);
@@ -807,6 +848,8 @@
 
     if (summary && summary.stamp) {
       node.appendChild(FX.stamp(summary.stamp.text, summary.stamp.tone));
+      /* The thud lands with the slam (300 ms delay + most of 520 ms). */
+      FX.later(state.timers, function () { sfx("stamp"); }, FX.instant() ? 0 : 600);
     }
 
     var versus = el("dl", "versus");
@@ -817,7 +860,8 @@
       versus.appendChild(row);
     }
     vsRow("You", summary ? summary.you : "—", "is-you");
-    vsRow("Crowd", reveal.crowd || "—");
+    /* From the experiments on the slides, not from other players. */
+    vsRow("In studies", reveal.crowd || "—");
     node.appendChild(versus);
 
     if (summary && summary.line) node.appendChild(el("p", "reveal__line", summary.line));
@@ -857,13 +901,15 @@
     var prop = PROPS[game.prop] || {};
     if (prop.revealExtra) prop.revealExtra(state, node, summary);
 
+    var perk = perkOf(game, summary);
+    if (perk) {
+      node.appendChild(perkCard(game, perk, true));
+      FX.later(state.timers, function () { sfx("perk"); }, FX.instant() ? 300 : 1000);
+    }
+
     if (reveal.takeaway) {
       var quote = el("blockquote", "takeaway");
       quote.appendChild(el("p", null, reveal.takeaway));
-      var cite = el("footer", "takeaway__cite");
-      if (reveal.slide) cite.appendChild(slideTag(reveal.slide));
-      cite.appendChild(el("span", null, "From the lecture slides"));
-      quote.appendChild(cite);
       node.appendChild(quote);
     }
 
@@ -1009,10 +1055,16 @@
     stop();
     if (!host || !game) return null;
 
+    var store = root.GameStore;
     var state = {
       host: host,
       game: game,
-      seed: root.RNG.seedFromUrl(root.location.search) || root.RNG.makeSeed(),
+      seed: root.RNG.makeSeed(),
+      /* Caps brought to this deal: the wallet without its own old result. */
+      wallet: store && typeof store.walletExcept === "function"
+        ? store.walletExcept(game.id)
+        : (CONFIG.wallet && CONFIG.wallet.start) || 100,
+      committed: false,
       choices: {},
       draws: {},
       ctx: {},
@@ -1024,9 +1076,20 @@
       timers: [],
       maxPayoff: maxPayoffOf(game)
     };
+    /* A deal you can lose caps in (game.stake) needs that many caps: a
+       broke Courier is spotted the difference, so the wallet never goes
+       below 0 and {wallet} is the same w the logic uses. */
+    var stake = Number(game.stake) || 0;
+    state.spotted = Math.max(0, stake - state.wallet);
+    state.wallet += state.spotted;
     var logic = logicFor(game);
     if (logic && typeof logic.init === "function") {
-      state.ctx = logic.init(roundRng(state, null, "init"), game) || {};
+      state.ctx = logic.init(roundRng(state, null, "init"), game, { wallet: state.wallet }) || {};
+    }
+    /* A replay sets the deal's old caps aside, so the pill shows {wallet}. */
+    if (store && typeof store.beginRun === "function") {
+      store.beginRun(game.id);
+      if (state.spotted) store.runCaps("stake", state.spotted, { delay: 900 });
     }
     current = state;
 
@@ -1042,6 +1105,9 @@
     var state = current;
     state.destroyed = true;
     clearTimers(state);
+    if (!state.committed && root.GameStore && typeof root.GameStore.cancelRun === "function") {
+      root.GameStore.cancelRun();
+    }
     if (state.keyHandler) document.removeEventListener("keydown", state.keyHandler);
     if (state.host) clear(state.host);
     current = null;
@@ -1056,7 +1122,8 @@
       clear: clear,
       caps: caps,
       intText: intText,
-      lotteryBar: lotteryBar
+      perkOf: perkOf,
+      perkCard: perkCard
     },
     get current() {
       return current;

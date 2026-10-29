@@ -116,6 +116,103 @@ html {
   }
 }
 
+/* Room for back link, ♪ and caps on small phones: the title hides. */
+@media (max-width: 399px) {
+  .games-bar__brand {
+    visibility: hidden;
+  }
+}
+
+/* The caps wallet: top-right on every play.html screen. The ☢ makes room
+   for it on phones. */
+@media (max-width: 479px) {
+  .games-bar__rad {
+    display: none;
+  }
+}
+
+.capsbar {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 4px 10px 4px 6px;
+  background: var(--rad-amber-dark);
+  border: 1px solid var(--rad-amber);
+  color: var(--rad-amber);
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  text-shadow: 0 0 6px rgba(255, 176, 0, 0.45);
+}
+
+/* Two classes: .sprite (declared later) would win over one. */
+.sprite.sprite--pill {
+  display: block;
+  width: 20px;
+  height: 20px;
+}
+
+.capsbar.is-gain {
+  animation: caps-gain 700ms ease-out;
+}
+
+.capsbar.is-loss {
+  animation: caps-loss 700ms ease-out;
+}
+
+@keyframes caps-gain {
+  0%, 40% {
+    background: rgba(18, 255, 18, 0.28);
+    border-color: var(--pip-green);
+    color: var(--pip-green);
+    box-shadow: 0 0 16px rgba(18, 255, 18, 0.55);
+  }
+}
+
+@keyframes caps-loss {
+  0%, 40% {
+    background: rgba(255, 59, 47, 0.25);
+    border-color: var(--pip-warn);
+    color: var(--pip-warn);
+    box-shadow: 0 0 16px rgba(255, 59, 47, 0.5);
+  }
+}
+
+/* "+2,400" / "−10" drifts down out of the pill, into view below the bar. */
+.capsbar__delta {
+  position: absolute;
+  z-index: 1; /* above the bar's hazard stripe */
+  top: 100%;
+  right: 0;
+  margin-top: 12px;
+  padding: 3px 6px;
+  background: rgba(2, 8, 2, 0.94);
+  border: 1px solid currentColor;
+  font-size: 10px;
+  pointer-events: none;
+  animation: caps-float 1400ms ease-out forwards;
+}
+
+.capsbar__delta.is-gain {
+  color: var(--pip-green);
+}
+
+.capsbar__delta.is-loss {
+  color: var(--pip-warn);
+}
+
+@keyframes caps-float {
+  0% { opacity: 0; transform: translateY(-8px); }
+  15% { opacity: 1; transform: translateY(0); }
+  70% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(14px); }
+}
+
 .games-main {
   width: min(760px, 100%);
   margin: 0 auto;
@@ -204,22 +301,6 @@ html {
   line-height: 1.5;
 }
 
-.slide-ref {
-  display: inline-block;
-  padding: 2px 6px;
-  background: rgba(255, 176, 0, 0.12);
-  border: 1px solid var(--rad-amber);
-  color: var(--rad-amber);
-  font-family: var(--font-body);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  line-height: 1.4;
-  text-transform: uppercase;
-  white-space: nowrap;
-  text-shadow: none;
-}
-
 /* --------------------------------------------------------------------------
    Stage panels and the sticky action bar
    -------------------------------------------------------------------------- */
@@ -298,11 +379,9 @@ html {
   white-space: nowrap;
 }
 
-/* Keyboard hints only where there is a keyboard. */
-@media (hover: none), (pointer: coarse) {
-  .hint--keys {
-    display: none;
-  }
+/* "Report Card" beside "Next deal 02" wraps rather than spill on 360 px. */
+.actionbar--row .btn--ghost {
+  white-space: normal;
 }
 
 /* --------------------------------------------------------------------------
@@ -377,18 +456,6 @@ html {
   font-size: 9px;
   line-height: 1.6;
   color: var(--pip-green);
-}
-
-.game__seed {
-  flex: none;
-  max-width: 110px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  padding: 3px 6px;
-  border: 1px solid var(--pip-green-line);
-  color: var(--pip-green-soft);
-  font-size: 10px;
 }
 
 .game__steps {
@@ -671,10 +738,14 @@ html {
   border-right: 0;
 }
 
-.lot-seg--zero,
-.lot-seg--lose {
+.lot-seg--zero {
   background: repeating-linear-gradient(135deg, #063006 0 6px, #0A5A0A 6px 12px);
   color: var(--pip-green-soft);
+}
+
+.lot-seg--loss {
+  background: repeating-linear-gradient(135deg, #5A1410 0 6px, #8A2018 6px 12px);
+  color: #FFD6D0;
 }
 
 .lot-seg--mid {
@@ -682,32 +753,15 @@ html {
   color: #DFFFDF;
 }
 
-.lot-seg--high,
-.lot-seg--win {
+.lot-seg--high {
   background: repeating-linear-gradient(45deg, #12FF12 0 7px, #8CFF8C 7px 14px);
   color: #021002;
 }
 
-/* Unknown odds: radio static. */
-.lot-seg--unknown {
-  background:
-    repeating-linear-gradient(90deg, rgba(255, 176, 0, 0.5) 0 2px, transparent 2px 5px),
-    repeating-linear-gradient(0deg, rgba(255, 176, 0, 0.25) 0 1px, transparent 1px 4px),
-    #2A1E00;
-  color: var(--rad-amber);
-  font-family: var(--font-pixel);
-  animation: static-shift 600ms steps(3, end) infinite;
-}
-
+/* Unknown odds: radio static (Festus's "?" caps). */
 @keyframes static-shift {
   33% { background-position: 3px 1px, 0 2px, 0 0; }
   66% { background-position: -2px 2px, 1px 0, 0 0; }
-}
-
-.lot-seg--unknown .lot-bar__p {
-  padding: 0 5px;
-  background: #1A1200;
-  color: var(--rad-amber);
 }
 
 .lot-bar__seg.is-thin {
@@ -739,6 +793,44 @@ html {
 
 .lot-list__x {
   color: var(--pip-green-ink);
+}
+
+/* Festus's bets: chance · which cap → what you get. */
+.lot-list--bet {
+  margin: 0 0 10px;
+}
+
+.lot-list--bet .lot-list__p {
+  min-width: 58px;
+}
+
+.lot-list__p.is-unknown {
+  color: var(--rad-amber);
+}
+
+.lot-list__when {
+  color: var(--pip-green-ink);
+}
+
+.lot-list--bet .lot-list__x {
+  margin-left: auto;
+  white-space: nowrap;
+  color: var(--pip-green);
+  font-weight: 700;
+}
+
+.bet-memo {
+  display: inline-block;
+  margin: 0 0 12px;
+  padding: 4px 10px;
+  border: 1px solid var(--rad-amber);
+  background: var(--rad-amber-dark);
+  color: var(--rad-amber-soft);
+  font-size: 13px;
+}
+
+.bet-memo strong {
+  color: var(--rad-amber);
 }
 
 /* --------------------------------------------------------------------------
@@ -910,6 +1002,13 @@ html {
   color: var(--pip-green);
 }
 
+/* The face the cap landed on (win or loss alike). */
+.betrows__row.is-hit {
+  border-color: var(--rad-amber);
+  color: var(--rad-amber);
+  font-weight: 700;
+}
+
 .betrows__row.is-lose {
   color: var(--pip-green-soft);
 }
@@ -938,6 +1037,19 @@ html {
 
 .coin.is-tails {
   transform: rotateY(180deg);
+}
+
+/* Garret's bottle cap: the cap's top as heads, its cork underside as tails. */
+.coin--cap {
+  width: 96px;
+  height: 96px;
+}
+
+.capback {
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, #C9A46A 0 46%, #8E6C3E 47% 56%, #D9DDE2 57% 100%);
+  box-shadow: inset 0 0 0 4px #6F7A84;
 }
 
 .coin.is-spinning {
@@ -970,6 +1082,19 @@ html {
   font-family: var(--font-pixel);
   font-size: 11px;
   animation: pill-pop 240ms ease-out both;
+}
+
+.flips__pot {
+  margin: 10px 0 0;
+  color: var(--pip-green-soft);
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  line-height: 1.6;
+  text-align: center;
+}
+
+.flips__pot.is-tails {
+  color: var(--rad-amber);
 }
 
 .flips__pill--heads {
@@ -1021,6 +1146,54 @@ html {
 
 .ladder__pay {
   color: inherit;
+}
+
+/* St. Petersburg's choice screen: the doubling at a glance. */
+.paystrip-wrap {
+  margin: 0 0 14px;
+}
+
+.paystrip__title {
+  margin: 0 0 6px;
+  color: var(--rad-amber);
+  font-family: var(--font-pixel);
+  font-size: 9px;
+  text-transform: uppercase;
+}
+
+.paystrip {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 3px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.paystrip__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 5px 2px;
+  background: rgba(2, 8, 2, 0.6);
+  border: 1px solid var(--pip-green-line);
+}
+
+.paystrip__k {
+  color: var(--pip-green-soft);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.paystrip__pay {
+  color: var(--pip-green);
+  font-family: var(--font-pixel);
+  font-size: 11px;
+}
+
+.paystrip__item--more .paystrip__pay {
+  color: var(--rad-amber);
 }
 
 /* Festus's barrel: 90 caps in a 15-wide grid. */
@@ -1093,13 +1266,74 @@ html {
   width: 12px;
 }
 
-.barrel__title {
-  margin: 0 0 8px;
+/* Festus's intro: the star count re-rolls to show that nobody knows it. */
+.barrel-wrap--scene {
+  clear: both;
+  margin-top: 4px;
+}
+
+.barrel-wrap--scene .capdot {
+  transition: background 200ms ease;
+}
+
+.barrel__maybe {
+  margin: 10px 0 0;
   color: var(--rad-amber);
   font-family: var(--font-pixel);
-  font-size: 9px;
+  font-size: 10px;
+  line-height: 1.6;
+  text-align: center;
+}
+
+/* The choice screen keeps only the key; each card draws its own barrel. */
+.barrel-wrap--key {
+  padding: 6px 10px;
+}
+
+.barrel-wrap--key .barrel__legend {
+  margin: 0;
+}
+
+/* One bet as a picture: the barrel with this bet's winning caps lit. */
+.betpic {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.barrel--mini {
+  flex: 1;
+  grid-template-columns: repeat(18, minmax(0, 1fr));
+  gap: 2px;
+  max-width: 220px;
+  margin: 0;
+}
+
+.capdot.is-dim {
+  opacity: 0.16;
+  box-shadow: none;
+}
+
+.odds-badge {
+  flex: none;
+  width: 64px;
+  padding: 4px 4px;
+  border: 1px solid currentColor;
+  font-family: var(--font-pixel);
+  font-size: 8px;
+  line-height: 1.5;
   text-align: center;
   text-transform: uppercase;
+}
+
+.odds-badge--known {
+  color: var(--pip-green);
+  background: rgba(18, 255, 18, 0.08);
+}
+
+.odds-badge--unknown {
+  color: var(--rad-amber);
+  background: rgba(255, 176, 0, 0.1);
 }
 
 .prop__box--barrel.is-shaking .sprite {
@@ -1326,15 +1560,6 @@ html {
   color: var(--pip-green-ink);
   font-size: 15px;
   line-height: 1.6;
-}
-
-.takeaway__cite {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  color: var(--pip-green-soft);
-  font-size: 11px;
 }
 
 .mathbox {
@@ -1680,11 +1905,180 @@ html {
 .mini-stamp--green { color: var(--pip-green); }
 .mini-stamp--amber { color: var(--rad-amber); }
 
-.report-footnote {
-  margin: 12px 0 0;
-  color: var(--pip-green-soft);
+/* Perk cards: on the reveal (fresh, slams in) and on the Report Card. */
+.perk {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  background: linear-gradient(90deg, rgba(255, 176, 0, 0.12), rgba(2, 8, 2, 0.6));
+  border: 1px solid var(--rad-amber);
+  box-shadow: 0 0 18px rgba(255, 176, 0, 0.18);
+}
+
+.perk--new {
+  animation: perk-in 520ms cubic-bezier(0.2, 1.4, 0.4, 1) 900ms both;
+}
+
+@keyframes perk-in {
+  from { opacity: 0; transform: scale(0.6) rotate(-4deg); }
+  to { opacity: 1; transform: none; }
+}
+
+.perk__art {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  background: rgba(2, 8, 2, 0.7);
+  border: 1px solid var(--rad-amber);
+}
+
+.sprite.sprite--perk {
+  width: 44px;
+  height: 44px;
+}
+
+.perk__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.perk__kicker {
+  color: var(--rad-amber);
+  font-family: var(--font-pixel);
+  font-size: 8px;
+  text-transform: uppercase;
+}
+
+.perk__name {
+  color: var(--rad-amber-soft);
+  font-family: var(--font-pixel);
   font-size: 11px;
-  text-align: center;
+  line-height: 1.5;
+}
+
+.perk__text {
+  color: var(--pip-green-ink);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.perks__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.perks__grid .perk {
+  margin: 0;
+  padding: 8px 10px;
+}
+
+@media (min-width: 560px) {
+  .perks__grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* S.P.E.C.I.A.L.-style stat bars on the Report Card. */
+.special,
+.perks {
+  margin: 0 0 16px;
+}
+
+.special__title {
+  margin: 0 0 8px;
+  color: var(--rad-amber);
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.special__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 18px;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 6px;
+}
+
+.special__label {
+  color: var(--pip-green-ink);
+  font-size: 13px;
+}
+
+.special__bar {
+  display: grid;
+  grid-template-columns: repeat(10, 11px);
+  gap: 2px;
+}
+
+.special__cell {
+  height: 12px;
+  border: 1px solid var(--pip-green-dim);
+}
+
+.special__cell.is-on {
+  background: var(--pip-green);
+  border-color: var(--pip-green);
+  box-shadow: 0 0 6px rgba(18, 255, 18, 0.45);
+  animation: pill-pop 240ms ease-out both;
+}
+
+.special__num {
+  color: var(--pip-green);
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  text-align: right;
+}
+
+/* The journey's end, typed under the rank; the rank glows when it lands. */
+.report-ending {
+  margin: 0 0 12px;
+  color: var(--rad-amber-soft);
+  font-size: 15px;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.report-ending p {
+  margin: 0;
+}
+
+.stage__title.is-crowned {
+  animation: crowned 1.6s ease-out both;
+}
+
+@keyframes crowned {
+  0% { text-shadow: 0 0 0 rgba(18, 255, 18, 0); }
+  35% { text-shadow: 0 0 22px rgba(18, 255, 18, 0.9), 0 0 4px #fff; }
+  100% { text-shadow: 0 0 10px rgba(18, 255, 18, 0.45); }
+}
+
+/* Final wallet on the Report Card. */
+.report-wallet {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  margin: 0 0 14px;
+  padding: 8px 12px;
+  background: var(--rad-amber-dark);
+  border: 1px solid var(--rad-amber);
+  color: var(--rad-amber-soft);
+  font-size: 12px;
+}
+
+.report-wallet strong {
+  color: var(--rad-amber);
+  font-family: var(--font-pixel);
+  font-size: 14px;
 }
 
 /* --------------------------------------------------------------------------
@@ -1875,7 +2269,6 @@ html {
 
   .games-bar__rad,
   .npc .sprite,
-  .lot-seg--unknown,
   .capdot--unknown,
   .coin.is-spinning {
     animation: none !important;
@@ -1885,7 +2278,6 @@ html {
 @media print {
   .games-bar,
   .actionbar,
-  .report-footnote,
   .ash {
     display: none !important;
   }

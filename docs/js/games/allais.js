@@ -329,7 +329,7 @@
   function plainExplanationFor(kind, data) {
     var you = data.first + " then " + data.second;
     if (kind === "certainty-effect") {
-      return you + ", like most people: the sure thing, then the bigger prize.";
+      return you + ", like most people. No single utility function fits both.";
     }
     if (kind === "mirror") {
       return you + ": the gamble first, the safer bet second. No single utility function fits both.";
