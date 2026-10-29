@@ -41,10 +41,22 @@
     }
   }
 
+  /* iPhones mute web audio with the silent switch unless the page plays
+     as "playback" (Safari 17+). Sound here is the game's own switch. */
+  function playbackSession() {
+    try {
+      var session = root.navigator && root.navigator.audioSession;
+      if (session && session.type !== "playback") session.type = "playback";
+    } catch (err) {
+      /* Older browsers: they follow the silent switch. */
+    }
+  }
+
   function audio() {
     if (ctx) return ctx;
     var Ctor = root.AudioContext || root.webkitAudioContext;
     if (!Ctor) return null;
+    playbackSession();
     try {
       ctx = new Ctor();
       master = ctx.createGain();
@@ -63,7 +75,22 @@
     var finish = function () {
       if (done) done();
     };
-    if (c && c.state === "suspended" && typeof c.resume === "function") {
+    if (!c) {
+      finish();
+      return;
+    }
+    /* iOS unlocks audio only if something plays inside the tap itself. */
+    try {
+      var blip = c.createBufferSource();
+      blip.buffer = c.createBuffer(1, 1, c.sampleRate);
+      blip.connect(c.destination);
+      blip.start(0);
+    } catch (err) {
+      /* Not needed outside iOS. */
+    }
+    /* "suspended" before the first tap; "interrupted" on iOS after the
+       screen locks or another app plays sound. Both resume on a tap. */
+    if (c.state !== "running" && typeof c.resume === "function") {
       var resumed = c.resume();
       if (resumed && typeof resumed.then === "function") resumed.then(finish, finish);
       else finish();
@@ -269,19 +296,14 @@
   /* After a tap that led here, sound works before any new tap. */
   if (on && allowedNow()) audio();
 
-  /* Without the power-on screen (reduced motion, ?fast=1), the first real
-     tap starts audio. A touch pointerdown doesn't count as a tap, so listen
-     to the tap events too, and stop only once audio is running. */
+  /* Any tap starts audio if it isn't running: the first tap of a page
+     without the power-on screen, or after iOS paused it (screen lock,
+     another app). A touch pointerdown doesn't count as a tap, so the tap
+     events are watched too. Cheap when audio is already running. */
   if (typeof document !== "undefined") {
     var TAPS = ["pointerdown", "pointerup", "touchend", "click", "keydown"];
     var unlock = function () {
-      if (!on) return;
-      wake(function () {
-        if (!ready()) return;
-        TAPS.forEach(function (type) {
-          document.removeEventListener(type, unlock, true);
-        });
-      });
+      if (on && !ready()) wake();
     };
     TAPS.forEach(function (type) {
       document.addEventListener(type, unlock, true);
