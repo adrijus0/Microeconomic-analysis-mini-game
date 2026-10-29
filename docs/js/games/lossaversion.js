@@ -4,8 +4,8 @@
  * Classic script: no DOM access at load time, so it can be <script>-tagged
  * from file:// and require()d by Node for tests.
  *
- * Slide 13: a coin flip, lose 100 or win 110. Most refuse, though the
- * expected gain is +5. Slide 14 explains it with prospect theory:
+ * Slide 12: a coin flip, lose 100 or win 110. Most refuse, though the
+ * expected gain is +5. Slide 13 explains it with prospect theory:
  *
  *   V(L) = Σ w(p_i) v(x_i),   v(x) = x^α (x ≥ 0), −λ(−x)^β (x < 0),
  *   w(p) = p^γ / (p^γ + (1 − p)^γ)^(1/γ)
@@ -33,7 +33,7 @@
 })(typeof window !== "undefined" ? window : null, function () {
   "use strict";
 
-  /* Slide 14's parameters. */
+  /* Slide 13's parameters. */
   var ALPHA = 0.88;
   var BETA = 0.88;
   var LAMBDA = 2.25;
@@ -141,7 +141,7 @@
     var loseX = -Number(parts[1].x);
     return {
       you: flipped ? "Flipped" : "Walked away",
-      /* "Most refuse" (slide 13): refusing is the crowd's choice, and it is
+      /* "Most refuse" (slide 12): refusing is the crowd's choice, and it is
          what EU over total wealth cannot explain for a +5 bet. */
       crowdMatch: !flipped,
       consistent: flipped,

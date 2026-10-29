@@ -4,14 +4,14 @@
  * Classic script: no DOM access at load time, so it can be <script>-tagged
  * from file:// and require()d by Node for tests.
  *
- * Slide 11's urn, reskinned: 90 caps = 30 red Nuka-Cola caps (the known red)
+ * Slide 10's urn, reskinned: 90 caps = 30 red Nuka-Cola caps (the known red)
  * + 60 yellow Sunset Sarsaparilla caps, of which an unknown number s carry a
  * blue star (the slide's black) and 60 − s are plain (the slide's yellow).
  *
  * The verdict is DERIVED from each option's `wins` list, not from ids. A bet
  * wins on a + b·s caps (linear in the unknown s), so "chosen ≻ other" holds
  * exactly for the s in an interval of [0, 60]. Two choices are consistent
- * with a single belief iff their intervals overlap (slide 12).
+ * with a single belief iff their intervals overlap (slide 11).
  *
  * Public API:
  *   EllsbergGame.init(rng)                      -> { mix: {nuka, star, plain} }
@@ -45,7 +45,7 @@
     star: "a star cap",
     plain: "a plain yellow cap"
   };
-  /* Red as on slide 12 (π_R); S and P for the star and plain caps. */
+  /* Red as on slide 11 (π_R); S and P for the star and plain caps. */
   var PI = { nuka: "\\pi_R", star: "\\pi_S", plain: "\\pi_P" };
 
   function fail(message) {
@@ -247,7 +247,7 @@
     var f = v.first;
     var s = v.second;
 
-    /* Bet 2 is bet 1 with plain yellow added to both sides (slide 12), so
+    /* Bet 2 is bet 1 with plain yellow added to both sides (slide 11), so
        the story is simply: did the same extra caps switch your pick? */
     var stayed = base(s) === (f.chosen.wins || []).slice().sort().join("+");
     var chain = [

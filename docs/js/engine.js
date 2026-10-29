@@ -746,13 +746,11 @@
 
   function figureSVG(name) {
     var F = root.Figures || {};
-    if (name === "triangle" && F.triangleSVG) return F.triangleSVG();
     if (name === "weighting" && F.weightingSVG) return F.weightingSVG();
     return "";
   }
 
   var FIGURE_TITLES = {
-    triangle: "The probability triangle",
     weighting: "Probability weighting"
   };
 
@@ -779,7 +777,7 @@
       var host = el("div", "figure__host");
       host.innerHTML = svg;
       fig.appendChild(host);
-      var text = name === "triangle" ? reveal.triangleCaption : reveal.weightingCaption;
+      var text = name === "weighting" ? reveal.weightingCaption : "";
       if (text) fig.appendChild(el("p", "figure__caption", text));
       body.appendChild(fig);
     });

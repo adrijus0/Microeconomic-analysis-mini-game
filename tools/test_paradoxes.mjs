@@ -236,7 +236,7 @@ if (existsSync(stpPath)) {
 const ellPath = resolve(root, "docs/js/games/ellsberg.js");
 if (existsSync(ellPath)) {
   const E = require(ellPath);
-  /* The slide 11 bets, reskinned: red = Nuka, black = star, yellow = plain. */
+  /* The slide 10 bets, reskinned: red = Nuka, black = star, yellow = plain. */
   const BETS = {
     I: { id: "I", wins: ["nuka"] },
     II: { id: "II", wins: ["star"] },
@@ -280,7 +280,7 @@ if (existsSync(ellPath)) {
   {
     const r = E.reveal({ [game.rounds[0].id]: "I", [game.rounds[1].id]: "IV" }, game, null);
     ok("I+IV bet 1 needs π_R > π_S", r.math[0].tex === "\\pi_R > \\pi_S", r.math[0].tex);
-    ok("I+IV bet 2 shows the slide 12 form",
+    ok("I+IV bet 2 shows the slide 11 form",
       r.math[1].tex === "\\pi_S + \\pi_P > \\pi_R + \\pi_P \\Rightarrow \\pi_S > \\pi_R", r.math[1].tex);
     ok("I+IV says the known odds won like most people", r.line.includes("known odds") && r.line.includes("most people"), r.line);
   }
@@ -337,7 +337,7 @@ if (existsSync(laPath)) {
   const game = CONFIG.games.lossaversion;
   const round = game.rounds[0];
   const flip = round.options.find((o) => o.id === "F");
-  /* Slide 13: lose 100 or win 110, expected gain +5. */
+  /* Slide 12: lose 100 or win 110, expected gain +5. */
   near("the flip's expected gain (slide 13)", L.ev(flip.lottery), 5, 1e-9);
   /* Slide 14: α = β = 0.88, λ = 2.25, γ = 0.61. */
   near("w(1/2) with γ = 0.61", L.w(0.5), 0.4206, 0.0005);

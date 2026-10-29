@@ -2,7 +2,7 @@
  * hub.js — the Pip-Boy map and the Vault-Tec Report Card.
  *
  * The map lists the encounters in CONFIG.encounterOrder with a rad meter for
- * progress. The Report Card is the slides' conclusion table (slide 15),
+ * progress. The Report Card is the slides' conclusion table (slide 14),
  * personalised from GameStore (localStorage inside try/catch, in-memory
  * fallback). No network, no tracking.
  */

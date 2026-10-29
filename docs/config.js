@@ -7,7 +7,7 @@
  *
  * Wasteland Odds: one short Fallout: New Vegas encounter per paradox. The
  * story text is Fallout lore; every number, probability, crowd share and
- * takeaway comes from the slides (Microeconomic_analysis__Copy_.pdf, 19
+ * takeaway comes from the slides (Microeconomic_analysis__Copy_-2.pdf, 19
  * pages). The `slide`/`slides` fields record the source slide for fact
  * checks; the game itself never shows slide numbers.
  */
@@ -286,10 +286,10 @@ window.CONFIG = {
       id: "allais",
       title: "The Crimson Caravan Contracts",
       location: "Crimson Caravan Co.",
-      slides: "7–10",
+      slides: "7–9",
       hook: "Sign one of Alice's two contracts.",
       paradox: "Allais paradox",
-      slideRefs: [7, 8, 10, 14],
+      slideRefs: [7, 8, 9, 13],
       logic: "AllaisGame",
       prop: "chest",
       scene: {
@@ -387,7 +387,7 @@ window.CONFIG = {
         crowd: "82% pick A · 83% pick C",
         crowdSource: "Kahneman & Tversky (1979)",
         takeaway: "A 1% chance of getting nothing feels huge next to a sure thing.",
-        figures: ["triangle", "weighting"],
+        figures: ["weighting"],
         notes: [
           {
             slide: 7,
@@ -395,15 +395,13 @@ window.CONFIG = {
               "Job 2 is job 1 with a shared “66% → 2,400” swapped for “66% → 0”. Independence says a shared part can't change your pick — yet most people switch from A to C."
           },
           {
-            slide: 10,
+            slide: 9,
             text:
               "Common ratio: 80% of people take 3,000 caps for sure over an 80% shot at 4,000. Divide both chances by 4 (25% → 3,000 vs 20% → 4,000) and 65% now take the 4,000. That should not change the choice — but it does."
           }
         ],
         weightingCaption:
-          "Small chances are overweighted, big ones underweighted (γ = 0.61) — so going from 99% to 100% feels huge.",
-        triangleCaption:
-          "EU indifference lines are straight and parallel, and AB ∥ DC, so EU ranks both pairs alike: A ≻ B ⇔ D ≻ C. Choosing A and C needs lines that fan out."
+          "Small chances are overweighted, big ones underweighted (γ = 0.61) — so going from 99% to 100% feels huge."
       }
     },
 
@@ -411,7 +409,7 @@ window.CONFIG = {
       id: "ellsberg",
       title: "Festus's Cap Barrel",
       location: "Sunset Sarsaparilla HQ",
-      slides: "11–12",
+      slides: "10–11",
       hook: "How many star caps? Festus ain't sayin'.",
       paradox: "Ellsberg paradox",
       logic: "EllsbergGame",
@@ -434,8 +432,8 @@ window.CONFIG = {
       /* Each card shows "pulled → you get" rows and the barrel with its
          winning caps lit. The win chance, the badge and the lit caps are all
          derived from `wins` (EllsbergGame.chance / known). Bet 2 mirrors
-         bet 1 with plain yellow added to both sides (slide 12).
-         Slide 11: red = Nuka cap, black = star cap, yellow = plain cap. */
+         bet 1 with plain yellow added to both sides (slide 11).
+         Slide 10: red = Nuka cap, black = star cap, yellow = plain cap. */
       rounds: [
         {
           id: "r1",
@@ -505,13 +503,13 @@ window.CONFIG = {
       reveal: {
         name: "Ellsberg paradox",
         kicker: "Ambiguity aversion",
-        slide: 12,
+        slide: 11,
         crowd: "Most pick I + IV: known odds",
         crowdSource: "Ellsberg (1961)",
         takeaway: "People dislike not knowing the odds.",
         notes: [
           {
-            slide: 12,
+            slide: 11,
             text:
               "Maxmin EU (Gilboa & Schmeidler, 1989): judge each bet by its worst possible mix. Worst case for II is 0 star caps; for III it is 60 star caps, so only the 30 red win. So I (30 of 90) beats II (0 of 90), and IV (60 of 90) beats III (30 of 90) — exactly what people pick."
           }
@@ -523,7 +521,7 @@ window.CONFIG = {
       id: "lossaversion",
       title: "The Atomic Wrangler Flip",
       location: "Atomic Wrangler · Freeside",
-      slides: "13–14",
+      slides: "12–13",
       hook: "Lose 100 or win 110 on one flip?",
       paradox: "Loss aversion",
       logic: "LossAversionGame",
@@ -572,7 +570,7 @@ window.CONFIG = {
       resolve: {
         heading: "Garret flips a cap…"
       },
-      /* `name` follows slide 15's row title. */
+      /* `name` follows slide 14's row title. */
       report: { name: "Small-bet risk aversion", breaks: "EU over total wealth", fix: "Loss aversion (λ > 1)" },
       special: { label: "Fear of losses", points: { F: 2, W: 9 } },
       perks: {
@@ -582,12 +580,12 @@ window.CONFIG = {
       reveal: {
         name: "Loss aversion",
         kicker: "Losses hurt more",
-        slide: 13,
+        slide: 12,
         crowd: "Most people refuse",
         takeaway: "Losses hurt about twice as much as gains please.",
         notes: [
           {
-            slide: 13,
+            slide: 12,
             text:
               "Under expected utility, refusing this small +5 bet would mean refusing absurdly good large bets too (Rabin, 2000). Prospect theory's simpler answer: losses hurt about twice as much as gains please (λ = 2.25)."
           }

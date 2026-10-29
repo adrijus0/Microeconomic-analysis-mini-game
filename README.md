@@ -7,9 +7,9 @@ takes about a minute and ends with a reveal built from the lecture slides.
 | Deal | Paradox | Slides | Deep link |
 |---|---|---|---|
 | Mr. House's Chip Toss | St. Petersburg | 6 | `play.html#stpetersburg` |
-| The Crimson Caravan Contracts | Allais | 7–10 | `play.html#allais` |
-| Festus's Cap Barrel | Ellsberg | 11–12 | `play.html#ellsberg` |
-| The Atomic Wrangler Flip | Loss aversion | 13–14 | `play.html#lossaversion` |
+| The Crimson Caravan Contracts | Allais | 7–9 | `play.html#allais` |
+| Festus's Cap Barrel | Ellsberg | 10–11 | `play.html#ellsberg` |
+| The Atomic Wrangler Flip | Loss aversion | 12–13 | `play.html#lossaversion` |
 
 Live site: <https://adrijus0.github.io/Microeconomic-analysis-mini-game/>
 (GitHub Pages, served from `docs/`).
